@@ -40,8 +40,6 @@ func (sonarqube SonarQubeScanner) Scan() {
 		return
 	} 
 
-	print(len(results.Matches))
-
 	for i, result := range results.Matches {
 		checkPublicProject(i, result)
 		checkDefaultCredential(i, result)
