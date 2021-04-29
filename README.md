@@ -3,7 +3,7 @@ A lot of tool using in DevSecOps pipelines. But DevSecOps process does not inclu
 
 Scanned Tools:
 - SonarQube
-- Owasp ZAP (TODO)
+- OpenVAS (TODO)
 
 # build
 ```bash
