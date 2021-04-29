@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 	"bytes"
 
@@ -9,9 +10,6 @@ import (
 	"crypto/tls"
 )
 
-var (
-	PROXY_STRING = "http://localhost:8090"
-)
 
 func PrepareRequest(method, uri, payload string) (*http.Request) {
 	var err error
@@ -29,10 +27,28 @@ func PrepareRequest(method, uri, payload string) (*http.Request) {
 	return req
 }
 
+func HostControl(index, port int, ip string) (bool) {
+	timeout := 5 * time.Second
+	result := false
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), timeout)
+
+	if (err != nil){
+		WarningLog(fmt.Sprintf("[%d]%s:%d - Host Not Accessible", index, ip, port))
+	} else if (conn == nil) {
+		WarningLog(fmt.Sprintf("[%d]%s:%d - Connection is NULL", index, ip, port))
+	} else {
+		conn.Close()
+		result = true
+	}
+
+	return result
+}
+
 func SendRequest(request *http.Request) (*http.Response) {
+
 	dialer := &net.Dialer{
 		Timeout: 5 * time.Second,
-		KeepAlive: 15 * time.Second,
+		KeepAlive: 10 * time.Second,
 	}
 
 	transport := &http.Transport {
@@ -47,19 +63,11 @@ func SendRequest(request *http.Request) (*http.Response) {
 
 		DisableKeepAlives: false,
 
-		MaxIdleConns: 100, 
-		MaxIdleConnsPerHost: 100,
-		MaxConnsPerHost: 100,
-
-		IdleConnTimeout: 15 * time.Second,
-
-		WriteBufferSize: 0,
-		ReadBufferSize: 0,
+		IdleConnTimeout: 10 * time.Second,
 	}
 
 	client := &http.Client {
 		Transport: transport,
-
 		CheckRedirect: func(*http.Request, []*http.Request) (error){
 			return http.ErrUseLastResponse
 		},

@@ -1,13 +1,14 @@
 package scanner
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
 
 	"io/ioutil"
 
 	"radar/core"
 	"radar/model"
+
 	"github.com/fatih/color"
 )
 
@@ -38,11 +39,15 @@ func (sonarqube SonarQubeScanner) Scan() {
 	if (len(results.Matches) < 1) {
 		core.WarningLog("Shodan can not found any record!")
 		return
-	} 
+	}
 
 	for i, result := range results.Matches {
-		checkPublicProject(i, result)
-		checkDefaultCredential(i, result)
+		status := core.HostControl(i, result.Port, result.Ip_str)
+
+		if (status) {
+			checkPublicProject(i, result)
+			checkDefaultCredential(i, result)
+		}
 	}
 }
 
