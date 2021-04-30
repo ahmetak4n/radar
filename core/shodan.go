@@ -17,7 +17,7 @@ func ShodanSearch(keyword string) (*model.ResultArray) {
 	url := SHODAN_API_URL + SHODAN_SEARCH_PATH + "?key=" + SHODAN_API_KEY + "&query=" + keyword
 	req := PrepareRequest("GET", url, "")
 
-	res := SendRequest(req)
+	res, _ := SendRequest(req)
 
 	body, err := ioutil.ReadAll(res.Body)
 	defer res.Body.Close()

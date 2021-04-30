@@ -1,15 +1,16 @@
 package scanner
 
 import (
-	"flag"
 	"fmt"
+	"flag"
+
+	"net"
 
 	"io/ioutil"
+	"encoding/json"
 
 	"radar/core"
 	"radar/model"
-
-	"github.com/fatih/color"
 )
 
 type SonarQubeScanner struct {
@@ -41,44 +42,76 @@ func (sonarqube SonarQubeScanner) Scan() {
 		return
 	}
 
-	for i, result := range results.Matches {
-		status := core.HostControl(i, result.Port, result.Ip_str)
-
+	for _, result := range results.Matches {
+		status, conn := core.HostControl(result.Port, result.Ip_str)
+	
 		if (status) {
-			checkPublicProject(i, result)
-			checkDefaultCredential(i, result)
+			go func(r model.SearchResult, c net.Conn) {
+				defer c.Close()
+			
+				checkPublicProject(r)
+				checkDefaultCredential(r)
+			}(result, conn)
 		}
 	}
 }
 
-func checkPublicProject(index int, searchResult model.SearchResult) {
+func checkPublicProject(searchResult model.SearchResult) {
 	req := core.PrepareRequest("GET", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/users/current", "")
-	res := core.SendRequest(req)
+	res, err := core.SendRequest(req)
 
-	_, err := ioutil.ReadAll(res.Body)
+	if (err != nil) {
+		return
+	}
+
+	_, err = ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 	
 	core.ErrorLog(err, "An error occured when reading response body")
 
 	if (res.StatusCode == 200) {
-		color.Green("[%d]Checked - %s:%d - Public Project Accessible!", index, searchResult.Ip_str, searchResult.Port)
+		projectCount := getProjectCount(searchResult) 
+		core.SuccessLog(fmt.Sprintf("Public Project Accessible! - %s:%d\n[*******] Project Count: %d", searchResult.Ip_str, searchResult.Port, projectCount))
 	} else {
-		color.Red("[%d]Checked - %s:%d - Public Project Not Accessible", index, searchResult.Ip_str, searchResult.Port)
+		core.FailLog(fmt.Sprintf("Public Project Not Accessible - %s:%d", searchResult.Ip_str, searchResult.Port))
 	}
 }
 
-func checkDefaultCredential(index int, searchResult model.SearchResult) {
+func checkDefaultCredential(searchResult model.SearchResult) {
 	req := core.PrepareRequest("POST", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/authentication/login", "login=admin&password=admin")
-	res := core.SendRequest(req)
+	res, err := core.SendRequest(req)
 
-	_, err := ioutil.ReadAll(res.Body)
+	if (err != nil) {
+		return
+	}
+
+	_, err = ioutil.ReadAll(res.Body)
 	defer res.Body.Close()
 	
 	core.ErrorLog(err, "An error occured when reading response body")
 
 	if (res.StatusCode == 200) {
-		color.Green("[%d]Checked - %s:%d - Default Credential Work", index, searchResult.Ip_str, searchResult.Port)
+		core.SuccessLog(fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port))
 	} else {
-		color.Red("[%d]Checked - %s:%d - Default Credential Not Work", index, searchResult.Ip_str, searchResult.Port)
+		core.FailLog(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port))
 	}
+}
+
+func getProjectCount(searchResult model.SearchResult) (int) {
+	req := core.PrepareRequest("GET", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/components/search_projects", "")
+	res, err := core.SendRequest(req)
+
+	if (err != nil) {
+		return 0
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+	
+	core.ErrorLog(err, "An error occured when reading response body")
+
+	result := model.SonarSearchProjects{}
+	json.Unmarshal([]byte(body), &result)
+
+	return result.Paging.Total
 }

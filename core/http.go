@@ -27,47 +27,51 @@ func PrepareRequest(method, uri, payload string) (*http.Request) {
 	return req
 }
 
-func HostControl(index, port int, ip string) (bool) {
+func HostControl(port int, ip string) (bool, net.Conn) {
 	timeout := 5 * time.Second
 	result := false
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), timeout)
 
 	if (err != nil){
-		WarningLog(fmt.Sprintf("[%d]%s:%d - Host Not Accessible", index, ip, port))
+		WarningLog(fmt.Sprintf("%s:%d - Host Not Accessible", ip, port))
 	} else if (conn == nil) {
-		WarningLog(fmt.Sprintf("[%d]%s:%d - Connection is NULL", index, ip, port))
+		WarningLog(fmt.Sprintf("%s:%d - Connection is NULL", ip, port))
 	} else {
-		conn.Close()
 		result = true
 	}
 
-	return result
+	return result, conn
 }
 
-func SendRequest(request *http.Request) (*http.Response) {
+func SendRequest(request *http.Request) (*http.Response, error) {
 
 	dialer := &net.Dialer{
-		Timeout: 5 * time.Second,
+		Timeout: 15 * time.Second,
 		KeepAlive: 10 * time.Second,
 	}
 
 	transport := &http.Transport {
-		DisableCompression: true,
 		DialContext: dialer.DialContext,
 
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
 
-		TLSHandshakeTimeout: 5 * time.Second,
-
+		DisableCompression: true,
 		DisableKeepAlives: false,
 
-		IdleConnTimeout: 10 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+		IdleConnTimeout: 15 * time.Second,
+
+		MaxIdleConns: 100, 
+		MaxConnsPerHost: 10,
+		MaxIdleConnsPerHost: 10,
 	}
 
 	client := &http.Client {
 		Transport: transport,
+		Timeout: 30 * time.Second,
+
 		CheckRedirect: func(*http.Request, []*http.Request) (error){
 			return http.ErrUseLastResponse
 		},
@@ -75,7 +79,7 @@ func SendRequest(request *http.Request) (*http.Response) {
 
 	response, err := client.Do(request)
 
-	ErrorLog(err, "An error occured when sending request")
+	ErrorLog(err, fmt.Sprintf("An error occured when sending request to %s", request.Host))
 
-	return response
+	return response, err
 }
