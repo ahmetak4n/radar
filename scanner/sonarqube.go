@@ -13,6 +13,13 @@ import (
 	"radar/model"
 )
 
+var (
+	SONAR_LOGIN_PATH = "/api/authentication/login"
+	SONAR_PUBLIC_PROJECT_PATH = "/api/users/current"
+	SONAR_PROJECT_COUNT_PATH = "/api/components/search_projects"
+	SONAR_PROJECT_ISSUE_COUNT_PATH = "/api/issues/search?resolved=false&facets=types&ps=1&additionalFields=_all"
+)
+
 type SonarQubeScanner struct {
 	Menu *flag.FlagSet
 }
@@ -57,7 +64,7 @@ func (sonarqube SonarQubeScanner) Scan() {
 }
 
 func checkPublicProject(searchResult model.SearchResult) {
-	req := core.PrepareRequest("GET", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/users/current", "")
+	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
 	res, err := core.SendRequest(req)
 
 	if (err != nil) {
@@ -71,14 +78,24 @@ func checkPublicProject(searchResult model.SearchResult) {
 
 	if (res.StatusCode == 200) {
 		projectCount := getProjectCount(searchResult) 
-		core.SuccessLog(fmt.Sprintf("Public Project Accessible! - %s:%d\n[*******] Project Count: %d", searchResult.Ip_str, searchResult.Port, projectCount))
+
+		if (projectCount > 0) {
+			codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
+			core.SuccessLog(fmt.Sprintf(
+					"Public Project Accessible! - %s:%d\n[*******] Project Count: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d", 
+					searchResult.Ip_str, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot))
+		} else {
+			core.SuccessLog(fmt.Sprintf("Public Project Accessible But Empty - %s:%d", searchResult.Ip_str, searchResult.Port))
+		}
+
 	} else {
 		core.FailLog(fmt.Sprintf("Public Project Not Accessible - %s:%d", searchResult.Ip_str, searchResult.Port))
 	}
 }
 
+
 func checkDefaultCredential(searchResult model.SearchResult) {
-	req := core.PrepareRequest("POST", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/authentication/login", "login=admin&password=admin")
+	req := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , "login=admin&password=admin")
 	res, err := core.SendRequest(req)
 
 	if (err != nil) {
@@ -98,7 +115,7 @@ func checkDefaultCredential(searchResult model.SearchResult) {
 }
 
 func getProjectCount(searchResult model.SearchResult) (int) {
-	req := core.PrepareRequest("GET", "http://" + searchResult.Ip_str + ":" + fmt.Sprint(searchResult.Port) + "/api/components/search_projects", "")
+	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
 	res, err := core.SendRequest(req)
 
 	if (err != nil) {
@@ -114,4 +131,38 @@ func getProjectCount(searchResult model.SearchResult) (int) {
 	json.Unmarshal([]byte(body), &result)
 
 	return result.Paging.Total
+}
+
+func getProjectIssuesCount(searchResult model.SearchResult) (int, int, int, int) {
+	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
+	
+	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
+	res, err := core.SendRequest(req)
+
+	if (err != nil) {
+		return 0, 0, 0, 0
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+	
+	core.ErrorLog(err, "An error occured when reading response body")
+
+	result := model.SonarSearchIssues{}
+	json.Unmarshal([]byte(body), &result)
+
+	for _, data := range result.Facets[0].Values {
+		switch data.Val {
+		case "CODE_SMELL":
+			codeSmell = data.Count
+		case "VULNERABILITY":
+			vulnerability = data.Count
+		case "BUG":
+			bug = data.Count
+		case "SECURITY_HOTSPOT":
+			securityHotspot = data.Count
+		}
+	}
+
+	return codeSmell, vulnerability, bug, securityHotspot
 }
