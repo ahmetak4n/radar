@@ -1,9 +1,12 @@
 # radar
-A lot of tool using in DevSecOps pipelines. But DevSecOps process does not include secure configuration of this tools. That's why too many misconfigured DevSecOps tools exist on internet. The Radar find DevSecOps tools via Shodan and check their configuration.
+A lot of tool using in DevSecOps pipelines. But DevSecOps process does not include secure configuration of this tools. That's why too many misconfigured DevSecOps tools exist on internet. Also so many security tools used for Phishing or Scanning are available on internet with old versions or misconfigured way.
+
+The Radar find DevSecOps or Security tools via Shodan and check their configuration.
 
 Scanned Tools:
 - SonarQube
-- Owasp ZAP (TODO)
+- OpenVAS (TODO)
+- GoPhish (TODO)
 
 # build
 ```bash
