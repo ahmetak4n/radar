@@ -19,3 +19,5 @@ go buid radar.go
 Scan misconfigured SonarQube services
 <br>
 `./radar sonarqube -apiKey $SHODAN_API_KEY` 
+
+![how to](https://github.com/ahmetak4n/radar/blob/master/how_to.png)
