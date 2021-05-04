@@ -47,6 +47,8 @@ func (sonarqube SonarQubeScanner) Scan() {
 	if (len(results.Matches) < 1) {
 		core.WarningLog("Shodan can not found any record!")
 		return
+	} else {
+		core.WarningLog(fmt.Sprintf("%d Record Detected", len(results.Matches)))
 	}
 
 	for _, result := range results.Matches {
@@ -55,15 +57,14 @@ func (sonarqube SonarQubeScanner) Scan() {
 		if (status) {
 			go func(r model.SearchResult, c net.Conn) {
 				defer c.Close()
-			
-				checkPublicProject(r)
-				checkDefaultCredential(r)
+				checkSonarQubePublicProject(r)
+				checkSonarQubeDefaultCredential(r)
 			}(result, conn)
 		}
 	}
 }
 
-func checkPublicProject(searchResult model.SearchResult) {
+func checkSonarQubePublicProject(searchResult model.SearchResult) {
 	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
 	res, err := core.SendRequest(req)
 
@@ -77,7 +78,7 @@ func checkPublicProject(searchResult model.SearchResult) {
 	core.ErrorLog(err, "An error occured when reading response body")
 
 	if (res.StatusCode == 200) {
-		projectCount := getProjectCount(searchResult) 
+		projectCount := getSonarQubeProjectCount(searchResult) 
 
 		if (projectCount > 0) {
 			codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
@@ -94,7 +95,7 @@ func checkPublicProject(searchResult model.SearchResult) {
 }
 
 
-func checkDefaultCredential(searchResult model.SearchResult) {
+func checkSonarQubeDefaultCredential(searchResult model.SearchResult) {
 	req := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , "login=admin&password=admin")
 	res, err := core.SendRequest(req)
 
@@ -114,7 +115,7 @@ func checkDefaultCredential(searchResult model.SearchResult) {
 	}
 }
 
-func getProjectCount(searchResult model.SearchResult) (int) {
+func getSonarQubeProjectCount(searchResult model.SearchResult) (int) {
 	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
 	res, err := core.SendRequest(req)
 

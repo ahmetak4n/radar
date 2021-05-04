@@ -32,6 +32,10 @@ func menu() {
 		sonarqube := scanner.NewSonarQubeScanner()
 		sonarqube.Menu.Parse(os.Args[2:])
 		sonarqube.Scan()
+	case "gophish":
+		gophish := scanner.NewGophishScanner()
+		gophish.Menu.Parse(os.Args[2:])
+		gophish.Scan()
 	}
 }
 

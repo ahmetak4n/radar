@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 )
 
-
 func PrepareRequest(method, uri, payload string) (*http.Request) {
 	var err error
 	var req *http.Request
