@@ -25,5 +25,5 @@ Scan Gophish services that work run with default credentials
 `./radar gophish -apiKey $SHODAN_API_KEY` 
 
 # screenshots
-![sonarqube_how to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png  =250x250)
+![](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png =250x250)
 ![gophish_how_to](https://github.com/ahmetak4n/radar/blob/master/gophish_how_to.png)
