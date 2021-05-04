@@ -5,8 +5,8 @@ The Radar find DevSecOps or Security tools via Shodan and check their configurat
 
 Scanned Tools:
 - SonarQube
+- GoPhish
 - OpenVAS (TODO)
-- GoPhish (TODO)
 
 # build
 ```bash
@@ -20,4 +20,10 @@ Scan misconfigured SonarQube services
 <br>
 `./radar sonarqube -apiKey $SHODAN_API_KEY` 
 
-![how to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png)
+Scan Gophish services that work run with default credentials
+<br>
+`./radar gophish -apiKey $SHODAN_API_KEY` 
+
+# screenshots
+![sonarqube_how to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png)
+![gophish_how_to](https://github.com/ahmetak4n/radar/blob/master/gophish_how_to.png)
