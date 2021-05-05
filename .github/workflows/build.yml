@@ -1,4 +1,4 @@
-name: main
+name: build
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
     - name: Build
       run: go build -v ./...
       
-  unittest:
+  test:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -36,7 +36,7 @@ jobs:
       run: go test -v ./test/*
   
   gosec:
-    needs: [build, unittest]
+    needs: [build, test]
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
