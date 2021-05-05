@@ -1,4 +1,4 @@
-name: Run Gosec
+name: Gosec
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
     branches:
       - master
 jobs:
-  tests:
+  gosec:
     runs-on: ubuntu-latest
     env:
       GO111MODULE: on
@@ -18,3 +18,5 @@ jobs:
         uses: securego/gosec@master
         with:
           args: -exclude=G402,G104 ./...
+        #G402 Related untrusted TLS connection
+        #G104 Related unhandled possible error
