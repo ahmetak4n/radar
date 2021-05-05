@@ -20,3 +20,30 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+      
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: UnitTest
+      run: go test -v ./test/*
+  
+  gosec:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v2
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: -exclude=G402,G104 ./...
+        #G402 Related untrusted TLS connection
+        #G104 Related unhandled possible error
