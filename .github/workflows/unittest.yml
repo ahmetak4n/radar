@@ -18,5 +18,5 @@ jobs:
       with:
         go-version: 1.15
 
-    - name: Test
-      run: go test -v ./...
+    - name: UnitTest
+      run: go test -v ./test/*
