@@ -1,4 +1,4 @@
-name: Go
+name: Build
 
 on:
   push:
@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      GO111MODULE: on
-      
     steps:
     - name: Checkout Source
       uses: actions/checkout@v2
@@ -26,8 +23,3 @@ jobs:
 
     - name: UnitTest
       run: go test -v ./test/*
-      
-    - name: SecTest
-      uses: securego/gosec@master
-      with:
-        args: ./..
