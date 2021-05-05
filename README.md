@@ -1,4 +1,5 @@
 [![Build](https://github.com/ahmetak4n/radar/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/build.yml)
+[![UnitTest](https://github.com/ahmetak4n/radar/actions/workflows/unittest.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/unittest.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=alert_status)](https://sonarcloud.io/dashboard?id=ahmetak4n_radar)
 
 # radar
