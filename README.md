@@ -1,6 +1,4 @@
-[![Build](https://github.com/ahmetak4n/radar/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/build.yml)
-[![UnitTest](https://github.com/ahmetak4n/radar/actions/workflows/unittest.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/unittest.yml)
-[![Gosec](https://github.com/ahmetak4n/radar/actions/workflows/gosec.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/gosec.yml)
+[![Build](https://github.com/ahmetak4n/radar/actions/workflows/main.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/main.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=alert_status)](https://sonarcloud.io/dashboard?id=ahmetak4n_radar)
 
 # radar
