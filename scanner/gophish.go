@@ -18,6 +18,8 @@ import (
 
 var (
 	GOPHISH_LOGIN_PATH = "/login?next=%2F"
+	GOPHISH_DEFAULT_USER = "admin"
+	GOPHISH_DEFAULT_PASSWORD = "gophish"
 )
 
 type GophishScanner struct {
@@ -75,7 +77,7 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult) {
 
 	gorillaCsrfCookie, gophishCsrfCookie, csrfToken := getGophishCsrfToken(searchResult, protocol)
 
-	req := core.PrepareRequest("POST", fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH) , fmt.Sprintf("username=admin&password=gophish&csrf_token=%s", csrfToken))
+	req := core.PrepareRequest("POST", fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH) , fmt.Sprintf("username=%s&password=%s&csrf_token=%s", GOPHISH_DEFAULT_USER, GOPHISH_DEFAULT_PASSWORD, csrfToken))
 	
 	req.AddCookie(&http.Cookie{Name: "_gorilla_csrf", Value: gorillaCsrfCookie})
 	req.AddCookie(&http.Cookie{Name: "gophish", Value: gophishCsrfCookie})

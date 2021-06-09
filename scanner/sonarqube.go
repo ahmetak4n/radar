@@ -15,6 +15,8 @@ import (
 
 var (
 	SONAR_LOGIN_PATH = "/api/authentication/login"
+	SONAR_DEFAULT_USER = "admin"
+	SONAR_DEFAULT_PASSWORD = "admin"
 	SONAR_PUBLIC_PROJECT_PATH = "/api/users/current"
 	SONAR_PROJECT_COUNT_PATH = "/api/components/search_projects"
 	SONAR_PROJECT_ISSUE_COUNT_PATH = "/api/issues/search?resolved=false&facets=types&ps=1&additionalFields=_all"
@@ -94,9 +96,8 @@ func checkSonarQubePublicProject(searchResult model.SearchResult) {
 	}
 }
 
-
 func checkSonarQubeDefaultCredential(searchResult model.SearchResult) {
-	req := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , "login=admin&password=admin")
+	req := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
 	res, err := core.SendRequest(req)
 
 	if (err != nil) {
