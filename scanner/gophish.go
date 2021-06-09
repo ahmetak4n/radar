@@ -114,7 +114,9 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 
 	_, err = ioutil.ReadAll(res.Body)
 	core.ErrorLog(err, "An error occured when reading response body")
-	res.Body.Close()
+	
+	err = res.Body.Close()
+	core.ErrorLog(err, "An error occured when closing response body")
 
 	gorillaCsrfCookie := url.QueryEscape(strings.TrimPrefix(strings.Split(res.Header.Get("Set-Cookie"), ";")[0], "_gorilla_csrf="))
 
@@ -129,7 +131,8 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 	body, err := ioutil.ReadAll(res.Body)
 	core.ErrorLog(err, "An error occured when reading response body")
 
-	res.Body.Close()
+	err = res.Body.Close()
+	core.ErrorLog(err, "An error occured when closing response body")
 
 	gophishCsrfCookie := strings.TrimPrefix(strings.Split(res.Header.Get("Set-Cookie"), ";")[0], "gophish=")
 
