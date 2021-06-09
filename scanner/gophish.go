@@ -63,7 +63,9 @@ func (gophish GophishScanner) Scan() {
 	
 		if (status) {
 			checkGophishkDefaultCredential(result)
-			conn.Close()
+			err := conn.Close()
+
+			core.ErrorLog(err, "An error occured when connection closing")
 		}
 	}
 }
@@ -111,8 +113,8 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 	}
 
 	_, err = ioutil.ReadAll(res.Body)
-	res.Body.Close()
 	core.ErrorLog(err, "An error occured when reading response body")
+	res.Body.Close()
 
 	gorillaCsrfCookie := url.QueryEscape(strings.TrimPrefix(strings.Split(res.Header.Get("Set-Cookie"), ";")[0], "_gorilla_csrf="))
 
@@ -125,9 +127,9 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	
 	core.ErrorLog(err, "An error occured when reading response body")
+
+	res.Body.Close()
 
 	gophishCsrfCookie := strings.TrimPrefix(strings.Split(res.Header.Get("Set-Cookie"), ";")[0], "gophish=")
 

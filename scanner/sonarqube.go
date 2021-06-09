@@ -130,7 +130,9 @@ func getSonarQubeProjectCount(searchResult model.SearchResult) (int) {
 	core.ErrorLog(err, "An error occured when reading response body")
 
 	result := model.SonarSearchProjects{}
-	json.Unmarshal([]byte(body), &result)
+	err = json.Unmarshal([]byte(body), &result)
+	
+	core.ErrorLog(err, "An error occured when deserialize object")
 
 	return result.Paging.Total
 }
@@ -151,7 +153,10 @@ func getProjectIssuesCount(searchResult model.SearchResult) (int, int, int, int)
 	core.ErrorLog(err, "An error occured when reading response body")
 
 	result := model.SonarSearchIssues{}
-	json.Unmarshal([]byte(body), &result)
+
+	err = json.Unmarshal([]byte(body), &result)
+
+	core.ErrorLog(err, "An error occured when deserialize object")
 
 	for _, data := range result.Facets[0].Values {
 		switch data.Val {

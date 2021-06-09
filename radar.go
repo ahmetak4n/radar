@@ -30,11 +30,17 @@ func menu() {
 	switch os.Args[1] {
 	case "sonarqube":
 		sonarqube := scanner.NewSonarQubeScanner()
-		sonarqube.Menu.Parse(os.Args[2:])
+		err := sonarqube.Menu.Parse(os.Args[2:])
+
+		core.ErrorLog(err, "An error occured when parsing args")
+		
 		sonarqube.Scan()
 	case "gophish":
 		gophish := scanner.NewGophishScanner()
-		gophish.Menu.Parse(os.Args[2:])
+		err := gophish.Menu.Parse(os.Args[2:])
+
+		core.ErrorLog(err, "An error occured when parsing args")
+
 		gophish.Scan()
 	}
 }

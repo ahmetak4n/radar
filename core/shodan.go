@@ -25,7 +25,9 @@ func ShodanSearch(keyword string) (*model.ResultArray) {
 	ErrorLog(err, "An error occured when reading response body in ShodanSearch")
 
 	result := model.ResultArray{}
-	json.Unmarshal([]byte(body), &result)
+	err = json.Unmarshal([]byte(body), &result)
+
+	ErrorLog(err, "An error occured when deserialize object")
 
 	return &result
 }
