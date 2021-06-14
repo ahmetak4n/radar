@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	SONAR_URL_FORMAT = "http://%s:%d%s"
 	SONAR_LOGIN_PATH = "/api/authentication/login"
 	SONAR_DEFAULT_USER = "admin"
 	SONAR_DEFAULT_PASSWORD = "admin"
@@ -74,7 +75,7 @@ func (sonarqube SonarQubeScanner) Scan() {
 func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
+	req, err := core.PrepareRequest("GET", fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
 	if (err != nil) {
 		return
 	}
@@ -104,7 +105,7 @@ func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitG
 func checkSonarQubeDefaultCredential(searchResult model.SearchResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	
-	req, err := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
+	req, err := core.PrepareRequest("POST", fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
 	if (err != nil) {
 		return
 	}
@@ -124,7 +125,7 @@ func checkSonarQubeDefaultCredential(searchResult model.SearchResult, wg *sync.W
 func getSonarQubeProjectCount(searchResult model.SearchResult) (int) {
 	result := model.SonarSearchProjects{}
 
-	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
+	req, err := core.PrepareRequest("GET", fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
 	if (err != nil) {
 		return 0
 	}
@@ -147,7 +148,7 @@ func getProjectIssuesCount(searchResult model.SearchResult) (int, int, int, int)
 	result := model.SonarSearchIssues{}
 	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
 	
-	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
+	req, err := core.PrepareRequest("GET", fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
 	if (err != nil) {
 		return 0, 0, 0, 0
 	}
