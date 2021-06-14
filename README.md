@@ -10,6 +10,8 @@ Scanned Tools:
 - SonarQube
 - GoPhish
 - OpenVAS (TODO)
+- Elasticsearch (TODO)
+- Grafana (TODO)
 
 # build
 ```bash
