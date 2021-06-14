@@ -1,12 +1,13 @@
 package scanner
 
 import (
+	"sync"
+
 	"fmt"
 	"flag"
 
 	"net"
 
-	"io/ioutil"
 	"encoding/json"
 
 	"radar/core"
@@ -28,7 +29,6 @@ type SonarQubeScanner struct {
 
 func NewSonarQubeScanner() (*SonarQubeScanner){
 	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
-
 	menu.StringVar(&core.SHODAN_API_KEY, "apiKey", "", "shodan api key (*)")
 
 	sonarQubeScanner := &SonarQubeScanner {
@@ -39,6 +39,8 @@ func NewSonarQubeScanner() (*SonarQubeScanner){
 }
 
 func (sonarqube SonarQubeScanner) Scan() {
+	var wg sync.WaitGroup
+
 	if core.SHODAN_API_KEY == "" {
 		core.WarningLog("Please fill all required parameter!")
 		return
@@ -59,27 +61,30 @@ func (sonarqube SonarQubeScanner) Scan() {
 		if (status) {
 			go func(r model.SearchResult, c net.Conn) {
 				defer c.Close()
-				checkSonarQubePublicProject(r)
-				checkSonarQubeDefaultCredential(r)
+				wg.Add(2)
+				checkSonarQubePublicProject(r, &wg)
+				checkSonarQubeDefaultCredential(r, &wg)
 			}(result, conn)
 		}
 	}
+
+	wg.Wait()
 }
 
-func checkSonarQubePublicProject(searchResult model.SearchResult) {
-	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
-	res, err := core.SendRequest(req)
+func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitGroup) {
+	defer wg.Done()
 
+	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH) , "")
+	if (err != nil) {
+		return
+	}
+	
+	_, statusCode, _, err := core.SendRequest(req)
 	if (err != nil) {
 		return
 	}
 
-	_, err = ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-	
-	core.ErrorLog(err, "An error occured when reading response body")
-
-	if (res.StatusCode == 200) {
+	if (statusCode == 200) {
 		projectCount := getSonarQubeProjectCount(searchResult) 
 
 		if (projectCount > 0) {
@@ -96,20 +101,20 @@ func checkSonarQubePublicProject(searchResult model.SearchResult) {
 	}
 }
 
-func checkSonarQubeDefaultCredential(searchResult model.SearchResult) {
-	req := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
-	res, err := core.SendRequest(req)
-
+func checkSonarQubeDefaultCredential(searchResult model.SearchResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+	
+	req, err := core.PrepareRequest("POST", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH) , fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
+	if (err != nil) {
+		return
+	}
+	
+	_, statusCode, _, err := core.SendRequest(req)
 	if (err != nil) {
 		return
 	}
 
-	_, err = ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-	
-	core.ErrorLog(err, "An error occured when reading response body")
-
-	if (res.StatusCode == 200) {
+	if (statusCode == 200) {
 		core.SuccessLog(fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port))
 	} else {
 		core.FailLog(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port))
@@ -117,57 +122,59 @@ func checkSonarQubeDefaultCredential(searchResult model.SearchResult) {
 }
 
 func getSonarQubeProjectCount(searchResult model.SearchResult) (int) {
-	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
-	res, err := core.SendRequest(req)
+	result := model.SonarSearchProjects{}
 
+	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
+	if (err != nil) {
+		return 0
+	}
+	
+	body, _, _, err := core.SendRequest(req)
 	if (err != nil) {
 		return 0
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-	
-	core.ErrorLog(err, "An error occured when reading response body")
-
-	result := model.SonarSearchProjects{}
 	err = json.Unmarshal([]byte(body), &result)
-	
-	core.ErrorLog(err, "An error occured when deserialize object")
+	if (err != nil){
+		core.ErrorLog(err, "An error occured when deserialize object")
+		return 0
+	}
 
 	return result.Paging.Total
 }
 
 func getProjectIssuesCount(searchResult model.SearchResult) (int, int, int, int) {
+	result := model.SonarSearchIssues{}
 	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
 	
-	req := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
-	res, err := core.SendRequest(req)
-
+	req, err := core.PrepareRequest("GET", fmt.Sprintf("http://%s:%d%s", searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
+	if (err != nil) {
+		return 0, 0, 0, 0
+	}
+	
+	body, _, _, err := core.SendRequest(req)
 	if (err != nil) {
 		return 0, 0, 0, 0
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-	
-	core.ErrorLog(err, "An error occured when reading response body")
-
-	result := model.SonarSearchIssues{}
-
 	err = json.Unmarshal([]byte(body), &result)
+	if (err != nil) {
+		core.ErrorLog(err, "An error occured when deserialize object")
+		return 0, 0, 0, 0
+	}
 
-	core.ErrorLog(err, "An error occured when deserialize object")
-
-	for _, data := range result.Facets[0].Values {
-		switch data.Val {
-		case "CODE_SMELL":
-			codeSmell = data.Count
-		case "VULNERABILITY":
-			vulnerability = data.Count
-		case "BUG":
-			bug = data.Count
-		case "SECURITY_HOTSPOT":
-			securityHotspot = data.Count
+	if (result.Facets != nil) {
+		for _, data := range result.Facets[0].Values {
+			switch data.Val {
+			case "CODE_SMELL":
+				codeSmell = data.Count
+			case "VULNERABILITY":
+				vulnerability = data.Count
+			case "BUG":
+				bug = data.Count
+			case "SECURITY_HOTSPOT":
+				securityHotspot = data.Count
+			}
 		}
 	}
 

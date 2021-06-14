@@ -8,9 +8,11 @@ import (
 	"net"
 	"net/http"
 	"crypto/tls"
+
+	"io/ioutil"
 )
 
-func PrepareRequest(method, uri, payload string) (*http.Request) {
+func PrepareRequest(method, uri, payload string) (*http.Request, error) {
 	var err error
 	var req *http.Request
 
@@ -20,10 +22,12 @@ func PrepareRequest(method, uri, payload string) (*http.Request) {
 	case "POST":
 		req, err = http.NewRequest(method, uri, bytes.NewBuffer([]byte(payload)))
 	}
-	
-	ErrorLog(err, "An error occured when preparing request")
 
-	return req
+	if (err != nil) {
+		ErrorLog(err, "An error occured when preparing request")
+	}
+
+	return req, err
 }
 
 func HostControl(port int, ip string) (bool, net.Conn) {
@@ -42,7 +46,7 @@ func HostControl(port int, ip string) (bool, net.Conn) {
 	return result, conn
 }
 
-func SendRequest(request *http.Request) (*http.Response, error) {
+func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	dialer := &net.Dialer{
 		Timeout: 15 * time.Second,
@@ -77,8 +81,25 @@ func SendRequest(request *http.Request) (*http.Response, error) {
 	}
 
 	response, err := client.Do(request)
+	if (err != nil) {
+		ErrorLog(err, fmt.Sprintf("An error occured when sending request to %s - %s", request.Host, request.URL))
+		return nil, 0, nil, err
+	}
 
-	ErrorLog(err, fmt.Sprintf("An error occured when sending request to %s", request.Host))
+	body, err := ioutil.ReadAll(response.Body)
+	if (err != nil) {
+		ErrorLog(err, fmt.Sprintf("An error occured when reading response body belong %s - %s", request.Host, request.URL))
+		return nil, 0, nil, err
+	}
 
-	return response, err
+	statusCode := response.StatusCode
+	headers := response.Header
+
+	err = response.Body.Close()
+	if (err != nil) {
+		ErrorLog(err, fmt.Sprintf("An error occured when closing response body %s - %s", request.Host, request.URL))
+		return nil, 0, nil, err
+	}
+
+	return body, statusCode, headers, err
 }

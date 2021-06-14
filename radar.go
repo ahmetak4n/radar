@@ -23,23 +23,29 @@ func menu() {
 	core.PrintBanner(banner)
 
 	if (len(os.Args) < 2) {
-		core.WarningLog("Please scanner type!")
+		core.WarningLog("Please specify scanner type!")
 		return
 	}
 
 	switch os.Args[1] {
 	case "sonarqube":
 		sonarqube := scanner.NewSonarQubeScanner()
-		err := sonarqube.Menu.Parse(os.Args[2:])
 
-		core.ErrorLog(err, "An error occured when parsing args")
+		err := sonarqube.Menu.Parse(os.Args[2:])
+		if (err != nil) {
+			core.ErrorLog(err, "An error occured when parsing args")
+			return
+		}
 		
 		sonarqube.Scan()
 	case "gophish":
 		gophish := scanner.NewGophishScanner()
-		err := gophish.Menu.Parse(os.Args[2:])
 
-		core.ErrorLog(err, "An error occured when parsing args")
+		err := gophish.Menu.Parse(os.Args[2:])
+		if (err != nil) {
+			core.ErrorLog(err, "An error occured when parsing args")
+			return
+		}
 
 		gophish.Scan()
 	}

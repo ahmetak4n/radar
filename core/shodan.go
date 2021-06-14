@@ -1,7 +1,6 @@
 package core
 
 import (
-	"io/ioutil"
 	"encoding/json"
 
 	"radar/model"
@@ -14,20 +13,24 @@ var (
 )
 
 func ShodanSearch(keyword string) (*model.ResultArray) {
-	url := SHODAN_API_URL + SHODAN_SEARCH_PATH + "?key=" + SHODAN_API_KEY + "&query=" + keyword
-	req := PrepareRequest("GET", url, "")
-
-	res, _ := SendRequest(req)
-
-	body, err := ioutil.ReadAll(res.Body)
-	defer res.Body.Close()
-
-	ErrorLog(err, "An error occured when reading response body in ShodanSearch")
-
 	result := model.ResultArray{}
-	err = json.Unmarshal([]byte(body), &result)
+	url := SHODAN_API_URL + SHODAN_SEARCH_PATH + "?key=" + SHODAN_API_KEY + "&query=" + keyword
+	
+	req, err := PrepareRequest("GET", url, "")
+	if (err != nil) {
+		return nil
+	}
 
-	ErrorLog(err, "An error occured when deserialize object")
+	body, _, _, err := SendRequest(req)
+	if (err != nil) {
+		return nil
+	}
+
+	err = json.Unmarshal([]byte(body), &result)
+	if (err != nil) {
+		ErrorLog(err, "An error occured when deserialize object")
+		return nil
+	}
 
 	return &result
 }

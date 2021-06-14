@@ -42,7 +42,10 @@ func TestPrepareRequest(t *testing.T) {
 
 
 func PrepareRequest(testData *PrepareRequestTestData, t *testing.T) {
-	postReq := core.PrepareRequest(testData.exceptedMethod, fmt.Sprintf("%s://%s", testData.exceptedScheme, testData.exceptedHost), testData.exceptedData)
+	postReq, err := core.PrepareRequest(testData.exceptedMethod, fmt.Sprintf("%s://%s", testData.exceptedScheme, testData.exceptedHost), testData.exceptedData)
+	if (err != nil) {
+		return
+	}
 
 	testData.actualMethod = postReq.Method
 	testData.actualHost = postReq.URL.Host
