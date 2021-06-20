@@ -17,6 +17,6 @@ type SonarSearchFacetsArray struct {
 }
 
 type SonarSearchFacetsValue struct {
-	Val 	string	`json:"val"`
-	Count 	int		`json:"count"`
+	Val		string	`json:"val"`
+	Count	int		`json:"count"`
 }
