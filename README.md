@@ -21,11 +21,11 @@ go buid radar.go
 # usage
 Scan misconfigured SonarQube services
 <br>
-`./radar sonarqube -apiKey $SHODAN_API_KEY` 
+`./radar sonarqube -aK $SHODAN_API_KEY` 
 
 Scan Gophish services that work run with default credentials
 <br>
-`./radar gophish -apiKey $SHODAN_API_KEY` 
+`./radar gophish -aK $SHODAN_API_KEY` 
 
 # screenshots
 ![sonar_how_to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png)

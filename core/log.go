@@ -24,6 +24,8 @@ func CustomLogger(logType string, message string, err string) {
 	case "banner":
 		c = *color.New(color.Bold, color.FgHiBlack)
 		result = message
+	default:
+		return
 	}
 
 	cPrint := c.PrintlnFunc()
