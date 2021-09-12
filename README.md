@@ -8,7 +8,11 @@ The Radar find DevSecOps or Security tools via Shodan and check their configurat
 
 Scanned Tools:
 - SonarQube
+  - Check default credential
+  - Show public projects and details
+  - Download source codes from selected project
 - GoPhish
+  - Check default credential
 - OpenVAS (TODO)
 
 # build
@@ -21,7 +25,7 @@ go buid radar.go
 # usage
 Help
 <br>
-`./radar -h 
+`./radar -h`
 
 Scan misconfigured SonarQube services
 <br>
