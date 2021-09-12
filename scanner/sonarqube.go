@@ -141,20 +141,28 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 	codeArray := getSonarQubeProjectCodes(hostname, port, file.Key)
 
 	if (codeArray == nil) {
-		f.WriteString("//An error occured when file downloaded")
 		core.CustomLogger("error", file.Key + " was not downloaded", "")
 		return
 	}
 
-	f.WriteString("//This code fetched by Radar")
+	_, err = f.WriteString("//This code fetched by Radar")
+	if (err != nil) {
+		core.CustomLogger("error", "An error occured when writing file" + file.Key, err.Error())
+	}
+
 	for _, line := range codeArray.Sources {
 		c := clearHtmlTagFromSonarQubeCodeFile(line.Code)
 
-		f.WriteString("\n")
-		f.WriteString(c)
+		_, err = f.WriteString("\n" + c)
+		if (err != nil) {
+			core.CustomLogger("error", "An error occured when writing file" + file.Key, err.Error())
+		}
 	}
 
-	f.Close()
+	err = f.Close()
+	if (err != nil) {
+		core.CustomLogger("error", "An error occured when closed" + file.Key, err.Error())
+	}
 }
 
 func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitGroup) {
