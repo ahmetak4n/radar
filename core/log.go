@@ -4,36 +4,43 @@ import (
 	"github.com/fatih/color"
 )
 
-func ErrorLog(err error, message string){
-	customColor := color.New(color.Bold, color.FgHiRed).PrintlnFunc()
+func CustomLogger(logType string, message string, err string) {
+	var c color.Color
+	var result string
+
+	switch logType{
+	case "error":
+		c = *color.New(color.Bold, color.FgHiRed)
+		result = "[ERROR] " + message + " ::: " + err
+	case "warning":
+		c = *color.New(color.Bold, color.FgHiYellow)
+		result = "[WARNING] " + message
+	case "success":
+		c = *color.New(color.Bold, color.FgGreen)
+		result = "[SUCCESS] " + message
+	case "fail":
+		c = *color.New(color.Bold, color.FgRed)
+		result = "[FAIL] " + message
+	case "banner":
+		c = *color.New(color.Bold, color.FgHiBlack)
+		result = message
+	}
+
+	cPrint := c.PrintlnFunc()
+	cPrint(result)
+	c.DisableColor()
+}
+
+func errorLog(err error, message string){
+	c := color.New(color.Bold, color.FgHiRed)
+	cPrint := c.PrintlnFunc()
+
 	message = "[ERROR] " + message
+
+	if (err != nil) {
+		message = message + ":::" + err.Error()
+	}
 		
-	customColor(message)
-}
-
-func WarningLog(message string) {
-	customColor := color.New(color.Bold, color.FgHiYellow).PrintlnFunc()
-	message = "[WARNING] " + message
-	
-	customColor(message)
-}
-
-func SuccessLog(message string) {
-	customColor := color.New(color.Bold, color.FgGreen).PrintlnFunc()
-	message = "[SUCCESS] " + message
-	
-	customColor(message)
-}
-
-func FailLog(message string) {
-	customColor := color.New(color.Bold, color.FgRed).PrintlnFunc()
-	message = "[FAIL] " + message
-	
-	customColor(message)
-}
-
-func PrintBanner(message string){
-	customColor := color.New(color.Bold, color.FgHiBlack).PrintlnFunc()
-	
-	customColor(message)
+	cPrint(message)
+	c.DisableColor()
 }

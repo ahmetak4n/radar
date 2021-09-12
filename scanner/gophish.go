@@ -19,21 +19,24 @@ import (
 
 var (
 	GOPHISH_LOGIN_PATH = "/login?next=%2F"
+
 	GOPHISH_DEFAULT_USER = "admin"
 	GOPHISH_DEFAULT_PASSWORD = "gophish"
 )
 
 type GophishScanner struct {
 	Menu *flag.FlagSet
+
+	ShodanApiKey string
 }
 
 func NewGophishScanner() (*GophishScanner){
-	menu := flag.NewFlagSet("gophish", flag.ExitOnError)
-	menu.StringVar(&core.SHODAN_API_KEY, "apiKey", "", "shodan api key (*)")
+	gophishScanner := &GophishScanner{}
 
-	gophishScanner := &GophishScanner {
-		Menu: menu,
-	}
+	menu := flag.NewFlagSet("gophish", flag.ExitOnError)
+	menu.StringVar(&gophishScanner.ShodanApiKey, "aK", "", "shodan api key (Required)")
+
+	gophishScanner.Menu = menu
 	
 	return gophishScanner
 }
@@ -41,18 +44,18 @@ func NewGophishScanner() (*GophishScanner){
 func (gophish GophishScanner) Scan() {
 	var wg sync.WaitGroup
 
-	if core.SHODAN_API_KEY == "" {
-		core.WarningLog("Please fill all required parameter!")
+	if gophish.ShodanApiKey == "" {
+		core.CustomLogger("error", "Shodan Api Key is required for scan", "")
 		return
 	}
 
-	results := core.ShodanSearch("gophish")
+	results := core.ShodanSearch("gophish", gophish.ShodanApiKey)
 
 	if (len(results.Matches) < 1) {
-		core.WarningLog("Shodan can not found any record!")
+		core.CustomLogger("warning", "Shodan can not found any record!", "")
 		return
 	} else {
-		core.WarningLog(fmt.Sprintf("%d Record Detected", len(results.Matches)))
+		core.CustomLogger("warning", fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
 	}
 
 	for _, result := range results.Matches {
@@ -97,9 +100,9 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.Wa
 	}
 
 	if (statusCode == 302) {
-		core.SuccessLog(fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port))
+		core.CustomLogger("success", fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
 	} else {
-		core.FailLog(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port))
+		core.CustomLogger("fail", fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
 	}
 }
 

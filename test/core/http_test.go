@@ -40,7 +40,6 @@ func TestPrepareRequest(t *testing.T) {
 	PrepareRequest(postData, t)
 }
 
-
 func PrepareRequest(testData *PrepareRequestTestData, t *testing.T) {
 	postReq, err := core.PrepareRequest(testData.exceptedMethod, fmt.Sprintf("%s://%s", testData.exceptedScheme, testData.exceptedHost), testData.exceptedData)
 	if (err != nil) {

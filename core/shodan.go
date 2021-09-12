@@ -8,13 +8,12 @@ import (
 
 var (
 	SHODAN_API_URL = "https://api.shodan.io"
-	SHODAN_API_KEY = ""
 	SHODAN_SEARCH_PATH = "/shodan/host/search"
 )
 
-func ShodanSearch(keyword string) (*model.ResultArray) {
+func ShodanSearch(keyword string, apiKey string) (*model.ResultArray) {
 	result := model.ResultArray{}
-	url := SHODAN_API_URL + SHODAN_SEARCH_PATH + "?key=" + SHODAN_API_KEY + "&query=" + keyword
+	url := SHODAN_API_URL + SHODAN_SEARCH_PATH + "?key=" + apiKey + "&query=" + keyword
 	
 	req, err := PrepareRequest("GET", url, "")
 	if (err != nil) {
@@ -28,7 +27,7 @@ func ShodanSearch(keyword string) (*model.ResultArray) {
 
 	err = json.Unmarshal([]byte(body), &result)
 	if (err != nil) {
-		ErrorLog(err, "An error occured when deserialize object")
+		CustomLogger("error", "An error occured when deserialize object", err.Error())
 		return nil
 	}
 

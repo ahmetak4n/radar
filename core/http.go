@@ -6,6 +6,7 @@ import (
 	"bytes"
 
 	"net"
+	//"net/url"
 	"net/http"
 	"crypto/tls"
 
@@ -24,7 +25,7 @@ func PrepareRequest(method, uri, payload string) (*http.Request, error) {
 	}
 
 	if (err != nil) {
-		ErrorLog(err, "An error occured when preparing request")
+		CustomLogger("error", "An error occured when preparing request", err.Error())
 	}
 
 	return req, err
@@ -36,9 +37,9 @@ func HostControl(port int, ip string) (bool, net.Conn) {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), timeout)
 
 	if (err != nil){
-		WarningLog(fmt.Sprintf("%s:%d - Host Not Accessible", ip, port))
+		CustomLogger("warning", fmt.Sprintf("%s:%d - Host Not Accessible", ip, port), "")
 	} else if (conn == nil) {
-		WarningLog(fmt.Sprintf("%s:%d - Connection is NULL", ip, port))
+		CustomLogger("warning", fmt.Sprintf("%s:%d - Connection is NULL", ip, port), "")
 	} else {
 		result = true
 	}
@@ -80,15 +81,20 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 		},
 	}
 
+	//Set proxy for requests will sending
+	//If proxy nil or returns a nil *URL, no proxy used
+	//proxyURL, _ := url.Parse("http://localhost:8080")
+	//transport.Proxy = http.ProxyURL(proxyURL)
+
 	response, err := client.Do(request)
 	if (err != nil) {
-		ErrorLog(err, fmt.Sprintf("An error occured when sending request to %s - %s", request.Host, request.URL))
+		CustomLogger("error", fmt.Sprintf("An error occured when sending request to %s - %s", request.Host, request.URL), err.Error())
 		return nil, 0, nil, err
 	}
 
 	body, err := ioutil.ReadAll(response.Body)
 	if (err != nil) {
-		ErrorLog(err, fmt.Sprintf("An error occured when reading response body belong %s - %s", request.Host, request.URL))
+		CustomLogger("error", fmt.Sprintf("An error occured when reading response body belong %s - %s", request.Host, request.URL), err.Error())
 		return nil, 0, nil, err
 	}
 
@@ -97,7 +103,7 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	err = response.Body.Close()
 	if (err != nil) {
-		ErrorLog(err, fmt.Sprintf("An error occured when closing response body %s - %s", request.Host, request.URL))
+		CustomLogger("error", fmt.Sprintf("An error occured when closing response body %s - %s", request.Host, request.URL), err.Error())
 		return nil, 0, nil, err
 	}
 
