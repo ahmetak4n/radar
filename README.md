@@ -39,3 +39,7 @@ Scan Gophish services that work run with default credentials
 ![sonar_how_to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_how_to.png)
 ![sonar_how_to](https://github.com/ahmetak4n/radar/blob/master/sonarqube_scd_how_to.png)
 ![gophish_how_to](https://github.com/ahmetak4n/radar/blob/master/gophish_how_to.png)
+
+# disclaimer
+Radar is developed for InfoSec persons. It should be used for authorized testing and/or educational purposes only.
+**I take no responsibility for the abuse of Radar.**
