@@ -32,17 +32,3 @@ func CustomLogger(logType string, message string, err string) {
 	cPrint(result)
 	c.DisableColor()
 }
-
-func errorLog(err error, message string){
-	c := color.New(color.Bold, color.FgHiRed)
-	cPrint := c.PrintlnFunc()
-
-	message = "[ERROR] " + message
-
-	if (err != nil) {
-		message = message + ":::" + err.Error()
-	}
-		
-	cPrint(message)
-	c.DisableColor()
-}
