@@ -21,8 +21,10 @@ var menuString =
 `
 Have two mod: sonarqube|gophish
 sonarqube
-	-attacktype: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
-	-apikey: Shodan API Key (Required when attacktype is "scan")
+	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
+	-aK: Shodan API Key (Required when attacktype is "scan")
+gophish
+	-aK: Shodan API Key
 	
 `
 
@@ -62,7 +64,7 @@ func sonarqube(args []string) {
 	case "scd":
 		sonarqube.Scd()
 	default:
-		core.CustomLogger("warning", "Invalid `attacktype`. Use `radar sonarqube -h` for help", "")
+		core.CustomLogger("warning", "Invalid `aT`. Use `radar sonarqube -h` for help", "")
 	}
 }
 
