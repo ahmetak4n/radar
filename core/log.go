@@ -19,10 +19,8 @@ func CustomLogger(logType string, message string, err string) {
 			result = "[ERROR] " + message + " ::: " + err
 		}
 	case "warning":
-		if (VERBOSE) {
-			c = *color.New(color.Bold, color.FgHiYellow)
-			result = "[WARNING] " + message
-		}
+		c = *color.New(color.Bold, color.FgHiYellow)
+		result = "[WARNING] " + message
 	case "success":
 		c = *color.New(color.Bold, color.FgGreen)
 		result = "[SUCCESS] " + message

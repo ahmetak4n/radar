@@ -59,7 +59,7 @@ func NewSonarQubeScanner() (*SonarQubeScanner){
 	menu.StringVar(&sonarQubeScanner.Hostname, "host", "", "sonarqube hostname or IP (Required when attacktype scd)")
 	menu.StringVar(&sonarQubeScanner.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
 
-	menu.BoolVar(&core.VERBOSE, "v", false, "project key that want to download source code (Required when attacktype scd)")
+	menu.BoolVar(&core.VERBOSE, "v", false, "set true if want to see error logs")
 	
 	sonarQubeScanner.Menu = menu
 
