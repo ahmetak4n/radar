@@ -46,6 +46,6 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: -exclude=G402 ./...
+          args: -exclude=G402, G304 ./...
         #G402 Related untrusted TLS connection
         #G104 Related unhandled possible error
