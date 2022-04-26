@@ -47,4 +47,4 @@ Find gophish services
 
 # disclaimer
 Radar is developed for InfoSec persons. It should be used for authorized testing and/or educational purposes only.
-**I take no responsibility for the abuse of Radar.**
+**I take no responsibility for the abuse of Radar**
