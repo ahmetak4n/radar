@@ -13,7 +13,6 @@ Scanned Tools:
   - Download source codes from selected project
 - GoPhish
   - Check default credential
-- OpenVAS (TODO)
 
 # build
 ```bash
