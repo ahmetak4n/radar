@@ -31,5 +31,11 @@ jobs:
       run: go test -v ./test/*
   semgrep:
     uses: ./.github/workflows/semgrep.yml
+    needs: build
     secrets:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+  snyk:
+    uses: ./.github/workflows/snyk-security.yml
+    needs: build
+    secrets:
+      semgrep-app-token: ${{ secrets.SNYK_TOKEN }}
