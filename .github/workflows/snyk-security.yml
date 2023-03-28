@@ -1,0 +1,48 @@
+name: SnykSecurity
+
+on:
+  workflow_call:
+    secrets:
+      snyk-token:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  snyk:
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: CheckoutSource
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: SetUpGo
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.18
+
+      - name: InstallDependencies
+        run: |
+          go get .
+      
+      - name: Set up Snyk CLI to check for security issues
+        uses: snyk/actions/setup@master
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk-token }}
+
+      - name: Snyk Code test
+        run: snyk code test --sarif > snyk-code.sarif # || true
+
+      - name: Snyk Open Source monitor
+        run: snyk monitor --all-projects
+
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-code.sarif
