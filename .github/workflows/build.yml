@@ -23,15 +23,17 @@ jobs:
       
     - name: UnitTest
       run: go test -v ./test/*
+  
+  security:
+    uses: ./.github/workflows/sonarcloud.yml
+    with:
+      project-key: ahmetak4n_radar
+      organization: ahmetak4n
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      sonar-token: ${{ secrets.SONAR_TOKEN }}
+  
       
-    - name: SonarCloud
-      uses: ahmetak4n/radar/.github/workflows/sonarcloud.yml@master
-      env:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        sonar-token: ${{ secrets.SONAR_TOKEN }}
-      with:
-        project-key: ahmetak4n_radar
-        organization: ahmetak4n
         
         
         
