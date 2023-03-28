@@ -31,18 +31,18 @@ jobs:
         run: |
           go get .
       
-      - name: Set up Snyk CLI to check for security issues
+      - name: SetUpSnyk
         uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
 
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif # || true
+      - name: SnykCode
+        run: snyk code test --sarif > snyk-code.sarif || true
 
-      - name: Snyk Open Source monitor
+      - name: SnykOpenSource
         run: snyk monitor --all-projects
 
-      - name: Upload result to GitHub Code Scanning
+      - name: UploadResult
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk-code.sarif
