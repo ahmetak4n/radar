@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: returntocorp/semgrep-action@master
+      - uses: returntocorp/semgrep-action@fcd5ab7459e8d91cb1777481980d1b18b4fc6735
         with:
           publishToken: ${{ secrets.semgrep-app-token }}
           generateSarif: "1"
