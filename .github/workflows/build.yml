@@ -11,12 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: CheckoutSource
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: SetUpGo
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v4
       with:
         go-version: 1.18
+
+    - name: InstallDependencies
+      run: |
+        go get .
 
     - name: Build
       run: go build -v ./...
@@ -24,8 +30,8 @@ jobs:
     - name: UnitTest
       run: go test -v ./test/*
     
-    - name: SonarCloud Analyze
-      uses: SonarSource/sonarcloud-github-action@de2e56b42aa84d0b1c5b622644ac17e505c9a049
+    - name: SonarCloud
+      uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  
