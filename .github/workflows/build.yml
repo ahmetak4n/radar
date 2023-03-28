@@ -33,8 +33,3 @@ jobs:
     uses: ./.github/workflows/semgrep.yml
     secrets:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
-      
-      
-        
-        
-        
