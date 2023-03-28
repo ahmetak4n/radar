@@ -25,6 +25,13 @@ jobs:
       run: go test -v ./test/*
       
     - name: SonarCloud
-      uses: ahmetak4n/radar/edit/master/.github/workflows/sonarcloud.yml@master
+      uses: ./.github/workflows/sonarcloud
+      env:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        sonar-token: ${{ secrets.SONAR_TOKEN }}
+      with:
+        project-key: ahmetak4n_radar
+        organization: ahmetak4n
+        
         
         
