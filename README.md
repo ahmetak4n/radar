@@ -1,6 +1,8 @@
 [![build](https://github.com/ahmetak4n/radar/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/build.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=alert_status)](https://sonarcloud.io/dashboard?id=ahmetak4n_radar)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=bugs)](https://sonarcloud.io/summary/new_code?id=ahmetak4n_radar)
+[![OpenSSF
+Scorecard](https://api.securityscorecards.dev/projects/github.com/ahmetak4n/radar/badge)](https://api.securityscorecards.dev/projects/github.com/ahmetak4n/radar)
 
 # radar
 A lot of tool using in DevSecOps pipelines. But DevSecOps process does not include secure configuration of these tools. That's why too many misconfigured DevSecOps tools exist on internet. Also so many security tools used for Phishing or Scanning are available on internet with old versions or misconfigured way or default credentials.
