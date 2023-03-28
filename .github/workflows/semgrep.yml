@@ -20,12 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: returntocorp/semgrep-action@fcd5ab7459e8d91cb1777481980d1b18b4fc6735
+      - uses: returntocorp/semgrep-action@master
         with:
           publishToken: ${{ secrets.semgrep-app-token }}
           generateSarif: "1"
 
-      - name: Upload SARIF file
+      - name: UploadResult
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: semgrep.sarif
