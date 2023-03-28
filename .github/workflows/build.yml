@@ -38,4 +38,4 @@ jobs:
     uses: ./.github/workflows/snyk-security.yml
     needs: build
     secrets:
-      semgrep-app-token: ${{ secrets.SNYK_TOKEN }}
+      snyk-token: ${{ secrets.SNYK_TOKEN }}
