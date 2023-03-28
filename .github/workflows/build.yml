@@ -33,6 +33,8 @@ jobs:
         args:
           -Dsonar.projectKey=${{ inputs.project-key }}
           -Dsonar.organization=${{ inputs.organization }}
+          -Dsonar.sources=${{ github.workspace }}
+          -Dsonar.projectBaseDir=${{ github.workspace }}
       
       
         
