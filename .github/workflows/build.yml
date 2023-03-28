@@ -33,8 +33,8 @@ jobs:
         args:
           -Dsonar.projectKey=ahmetak4n_radar
           -Dsonar.organization=ahmetak4n
-          -Dsonar.sources=${{ github.workspace }}
-          -Dsonar.projectBaseDir=${{ github.workspace }}
+          -Dsonar.sources=.
+          -Dsonar.exclusions=**/*_test.go
       
       
         
