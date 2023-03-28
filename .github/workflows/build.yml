@@ -31,8 +31,8 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  
       with:
         args:
-          -Dsonar.projectKey=${{ inputs.project-key }}
-          -Dsonar.organization=${{ inputs.organization }}
+          -Dsonar.projectKey=ahmetak4n_radar
+          -Dsonar.organization=ahmetak4n
           -Dsonar.sources=${{ github.workspace }}
           -Dsonar.projectBaseDir=${{ github.workspace }}
       
