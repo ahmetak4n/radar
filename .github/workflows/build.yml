@@ -32,8 +32,6 @@ jobs:
     - name: UnitTest
       run: go test -v ./test/*
   semgrep:
-    permissions:
-      security-events: write
     uses: ./.github/workflows/semgrep.yml
     needs: build
     secrets:
