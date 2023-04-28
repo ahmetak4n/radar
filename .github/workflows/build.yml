@@ -5,8 +5,6 @@ on:
     branches: [ master ]
     
   workflow_dispatch:
-  
-permissions: read-all
 
 jobs:
   build:
@@ -32,11 +30,19 @@ jobs:
     - name: UnitTest
       run: go test -v ./test/*
   semgrep:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     uses: ./.github/workflows/semgrep.yml
     needs: build
     secrets:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
   snyk:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     uses: ./.github/workflows/snyk-security.yml
     needs: build
     secrets:
