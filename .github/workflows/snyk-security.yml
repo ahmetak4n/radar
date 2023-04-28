@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: CheckoutSource
-        uses: actions/checkout@v3
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
         with:
           fetch-depth: 0
 
       - name: SetUpGo
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9
         with:
           go-version: 1.18
 
@@ -32,7 +32,7 @@ jobs:
           go get .
       
       - name: SetUpSnyk
-        uses: snyk/actions/golang@master
+        uses: snyk/actions/golang@806182742461562b67788a64410098c9d9b96adb
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.snyk-token }}
@@ -40,6 +40,6 @@ jobs:
           args: --sarif-file-output=snyk.sarif
       
       - name: UploadResult
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@f3feb00acb00f31a6f60280e6ace9ca31d91c76a
         with:
           sarif_file: snyk.sarif
