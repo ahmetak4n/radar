@@ -1,4 +1,4 @@
-[![build](https://github.com/ahmetak4n/radar/actions/workflows/build.yml/badge.svg?branch=master&event=push)](https://github.com/ahmetak4n/radar/actions/workflows/build.yml)
+[![build](https://github.com/ahmetak4n/radar/actions/workflows/build.yml/badge.svg)](https://github.com/ahmetak4n/radar/actions/workflows/build.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=alert_status)](https://sonarcloud.io/dashboard?id=ahmetak4n_radar)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=ahmetak4n_radar&metric=bugs)](https://sonarcloud.io/summary/new_code?id=ahmetak4n_radar)
 [![OpenSSF
