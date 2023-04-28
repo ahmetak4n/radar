@@ -6,22 +6,21 @@ on:
   
   workflow_dispatch:
 
-jobs:
-  analyze:
-    name: Analyze
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+permissions: read-all
 
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    
     strategy:
       fail-fast: false
       matrix:
         language: [ 'go' ]
 
     steps:
-    - name: Checkout repository
+    - name: Checkout Code
       uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
 
     - name: Initialize CodeQL
