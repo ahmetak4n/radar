@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: CheckoutSource
-      uses: actions/checkout@v3
+      uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
       with:
         fetch-depth: 0
 
     - name: SetUpGo
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9
       with:
         go-version: 1.18
 
