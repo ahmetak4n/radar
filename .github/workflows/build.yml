@@ -35,6 +35,7 @@ jobs:
   semgrep:
     uses: ./.github/workflows/semgrep.yml
     permissions:
+      contents: read
       security-events: write
     needs: build
     secrets:
