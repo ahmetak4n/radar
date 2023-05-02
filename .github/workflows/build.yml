@@ -8,7 +8,6 @@ on:
   
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   build:
@@ -35,6 +34,8 @@ jobs:
       run: go test -v ./test/*
   semgrep:
     uses: ./.github/workflows/semgrep.yml
+    permissions:
+      security-events: write
     needs: build
     secrets:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
