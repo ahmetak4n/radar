@@ -6,8 +6,6 @@ on:
       snyk-token:
         required: true
 
-permissions: read-all
-
 jobs:
   snyk:
     runs-on: ubuntu-latest
