@@ -5,9 +5,6 @@ on:
     branches: [ master ]
     
   workflow_dispatch:
-  
-permissions:
-  contents: read
 
 jobs:
   build:
@@ -42,6 +39,9 @@ jobs:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
   snyk:
     uses: ./.github/workflows/snyk-security.yml
+    permissions:
+      contents: read
+      security-events: write
     needs: build
     secrets:
       snyk-token: ${{ secrets.SNYK_TOKEN }}
