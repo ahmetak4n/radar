@@ -5,6 +5,9 @@ on:
     - cron: '45 3 * * 6'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   scorecard:
     runs-on: ubuntu-latest
