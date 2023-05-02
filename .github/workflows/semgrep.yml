@@ -5,6 +5,9 @@ on:
     secrets:
       semgrep-app-token:
         required: true
+        
+permissions:
+  contents: read
 
 jobs:
   semgrep:
