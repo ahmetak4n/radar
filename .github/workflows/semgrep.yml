@@ -6,8 +6,6 @@ on:
       semgrep-app-token:
         required: true
 
-permissions: read-all
-
 jobs:
   semgrep:
     runs-on: ubuntu-latest
