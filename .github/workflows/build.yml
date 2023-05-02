@@ -45,14 +45,3 @@ jobs:
     needs: build
     secrets:
       snyk-token: ${{ secrets.SNYK_TOKEN }}
-  codeql:
-    permissions:
-      security-events: write
-    uses: ./.github/workflows/codeql.yml
-    needs: build
-  scorecard:
-    permissions:
-      security-events: write
-      id-token: write
-    uses: ./.github/workflows/scorecard.yml
-    needs: build
