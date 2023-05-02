@@ -53,5 +53,6 @@ jobs:
   scorecard:
     permissions:
       security-events: write
+      id-token: write
     uses: ./.github/workflows/scorecard.yml
     needs: build
