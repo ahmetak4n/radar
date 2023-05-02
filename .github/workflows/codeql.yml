@@ -5,8 +5,6 @@ on:
     - cron: '45 3 * * 6'
   workflow_dispatch:
 
-permissions: read-all
-
 jobs:
   codeql:
     runs-on: ubuntu-latest
