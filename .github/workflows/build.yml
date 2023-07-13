@@ -55,4 +55,4 @@ jobs:
       security-events: write
     needs: build
     secrets:
-      snyk-token: ${{ secrets.SONARCLOUD }}
+      sonar-cloud-token: ${{ secrets.SONARCLOUD }}
