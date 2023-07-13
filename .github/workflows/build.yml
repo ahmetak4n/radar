@@ -48,3 +48,11 @@ jobs:
     needs: build
     secrets:
       snyk-token: ${{ secrets.SNYK_TOKEN }}
+  sonarcloud:
+    uses: ./.github/workflows/sonarcloud.yml
+    permissions:
+      contents: read
+      security-events: write
+    needs: build
+    secrets:
+      snyk-token: ${{ secrets.SONARCLOUD }}
