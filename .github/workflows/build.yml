@@ -49,7 +49,7 @@ jobs:
     secrets:
       snyk-token: ${{ secrets.SNYK_TOKEN }}
   sonarcloud:
-    uses: ahmetak4n/actions/quality/sonarcloud.yml@v0.0.1
+    uses: ahmetak4n/actions/sonarcloud@v0.0.1
     permissions:
       contents: read
       security-events: write
