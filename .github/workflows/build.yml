@@ -34,7 +34,7 @@ jobs:
       run: go test -v ./test/*
 
     - name: Soanrcloud
-      uses: ahmetak4n/actions/sonarcloud@v0.0.2
+      uses: ahmetak4n/actions/sonarcloud@v0.0.1
       with:
         project-key: "ahmetak4n_radar"
         organization: "ahmetak4n"
