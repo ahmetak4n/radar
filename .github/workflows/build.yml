@@ -33,16 +33,19 @@ jobs:
     - name: UnitTest
       run: go test -v ./test/*
 
-    - name: Soanrcloud
-      uses: ahmetak4n/actions/sonarcloud@main
-      with:
-        project-key: "ahmetak4n_radar"
-        organization: "ahmetak4n"
-        sources: "."
-        exclusions: "**/*_test.go"
-      secrets:
-        sonar-cloud-token: ${{ secrets.SONARCLOUD }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+  sonarcloud:
+    uses: ahmetak4n/actions/sonarcloud@main
+    permissions:
+      contents: read
+    needs: build
+    with:
+      project-key: "ahmetak4n_radar"
+      organization: "ahmetak4n"
+      sources: "."
+      exclusions: "**/*_test.go"
+    secrets:
+      sonar-cloud-token: ${{ secrets.SONARCLOUD }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
   semgrep:
     uses: ./.github/workflows/semgrep.yml
