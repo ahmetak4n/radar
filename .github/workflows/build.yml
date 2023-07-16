@@ -42,6 +42,7 @@ jobs:
         exclusions: "**/*_test.go"
       secrets:
         sonar-cloud-token: ${{ secrets.SONARCLOUD }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
   semgrep:
     uses: ./.github/workflows/semgrep.yml
