@@ -34,13 +34,13 @@ jobs:
       run: go test -v ./test/*
 
     - name: Soanrcloud
-      uses: ahmetak4n/actions/sonarcloud@v0.0.1
+      uses: ahmetak4n/actions/sonarcloud@main
       with:
         project-key: "ahmetak4n_radar"
         organization: "ahmetak4n"
         sources: "."
         exclusions: "**/*_test.go"
-      env:
+      secrets:
         sonar-cloud-token: ${{ secrets.SONARCLOUD }}
 
   semgrep:
