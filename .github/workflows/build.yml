@@ -34,7 +34,7 @@ jobs:
       run: go test -v ./test/*
 
   sonarcloud:
-    uses: ahmetak4n/actions/sonarcloud@main
+    uses: ahmetak4n/actions/.github/workflows/sonarcloud.yml@main
     permissions:
       contents: read
     needs: build
