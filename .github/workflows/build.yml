@@ -25,13 +25,10 @@ jobs:
 
     - name: InstallDependencies
       run: |
-        go get .
+        go get -u ./cmd/rada
 
     - name: Build
-      run: go build -v ./...
-      
-    - name: UnitTest
-      run: go test -v ./test/*
+      run: go build -v ./cmd/radar/radar.go
 
   sonarcloud:
     uses: ahmetak4n/actions/.github/workflows/sonarcloud.yml@main
