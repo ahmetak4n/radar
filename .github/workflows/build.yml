@@ -52,12 +52,3 @@ jobs:
     needs: build
     secrets:
       semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
-  snyk:
-    uses: ahmetak4n/actions/.github/workflows/snyk.yml@main
-    permissions:
-      contents: read
-      security-events: write
-    needs: build
-    secrets:
-      snyk-token: ${{ secrets.SNYK_TOKEN }}
-
