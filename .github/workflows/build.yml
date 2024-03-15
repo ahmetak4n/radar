@@ -25,7 +25,7 @@ jobs:
 
     - name: InstallDependencies
       run: |
-        go get -u ./cmd/rada
+        go get -u ./cmd/radar/
 
     - name: Build
       run: go build -v ./cmd/radar/radar.go

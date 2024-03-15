@@ -17,7 +17,7 @@ ______  ___ ______  ___  ______          ______
 `
 
 var menuString = `
-Have two mod: sonarqube|gophish
+Radar has two mod: sonarqube|gophish
 sonarqube
 	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
 	-aK: Shodan API Key (Required when attacktype is "scan")
@@ -26,7 +26,6 @@ gophish
 `
 
 func menu() {
-
 	core.CustomLogger("banner", banner, "")
 
 	if len(os.Args) < 2 {
