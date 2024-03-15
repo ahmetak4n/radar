@@ -3,7 +3,7 @@ package core
 import (
 	"encoding/json"
 
-	"radar/model"
+	"radar/internal/model"
 )
 
 var (

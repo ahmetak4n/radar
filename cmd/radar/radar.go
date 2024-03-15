@@ -3,13 +3,12 @@ package main
 import (
 	"os"
 
-	"radar/core"
-	"radar/scanner"
+	"radar/internal/core"
+	"radar/internal/scanner"
 )
 
-
-var	banner =  
-`______  ___ ______  ___  ______          ______  
+var banner = `
+______  ___ ______  ___  ______          ______  
 | ___ \/ _ \|  _  \/ _ \ | ___ \        /     . \ 
 | |_/ / /_\ \ | | / /_\ \| |_/ /        | .    .| 
 |    /|  _  | | | |  _  ||    /         |   .   | 
@@ -17,22 +16,20 @@ var	banner =
 \_| \_\_| |_/___/ \_| |_/\_| \_|        \_______/ 
 `
 
-var menuString =
-`
+var menuString = `
 Have two mod: sonarqube|gophish
 sonarqube
 	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
 	-aK: Shodan API Key (Required when attacktype is "scan")
 gophish
-	-aK: Shodan API Key
-	
+	-aK: Shodan API Key	
 `
 
 func menu() {
 
 	core.CustomLogger("banner", banner, "")
 
-	if (len(os.Args) < 2) {
+	if len(os.Args) < 2 {
 		core.CustomLogger("warning", "Invalid radar mod. Use -h for help", "")
 		return
 	}
@@ -53,7 +50,7 @@ func sonarqube(args []string) {
 	sonarqube := scanner.NewSonarQubeScanner()
 
 	err := sonarqube.Menu.Parse(args)
-	if (err != nil) {
+	if err != nil {
 		core.CustomLogger("error", "An error occured when parsing args. Use `radar sonarqube -h` for help", err.Error())
 		return
 	}
@@ -72,7 +69,7 @@ func gophish(args []string) {
 	gophish := scanner.NewGophishScanner()
 
 	err := gophish.Menu.Parse(args)
-	if (err != nil) {
+	if err != nil {
 		core.CustomLogger("error", "An error occured when parsing args", err.Error())
 		return
 	}
@@ -80,6 +77,6 @@ func gophish(args []string) {
 	gophish.Scan()
 }
 
-func main() { 
+func main() {
 	menu()
 }
