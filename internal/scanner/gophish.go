@@ -13,7 +13,9 @@ import (
 	"html"
 	"strings"
 
-	"radar/internal/core"
+  "radar/internal/network"
+  "radar/internal/shodan"
+  "radar/internal/log"
 	"radar/internal/model"
 )
 
@@ -45,21 +47,21 @@ func (gophish GophishScanner) Scan() {
 	var wg sync.WaitGroup
 
 	if gophish.ShodanApiKey == "" {
-		core.CustomLogger("error", "Shodan Api Key is required for scan", "")
+		log.Stdout(log.Error, "Shodan Api Key is required for scan", "")
 		return
 	}
 
-	results := core.ShodanSearch("gophish", gophish.ShodanApiKey)
+	results := shodan.ShodanSearch("gophish", gophish.ShodanApiKey)
 
 	if len(results.Matches) < 1 {
-		core.CustomLogger("warning", "Shodan can not found any record!", "")
+		log.Stdout(log.Warning, "Shodan can not found any record!", "")
 		return
 	} else {
-		core.CustomLogger("warning", fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
+		log.Stdout(log.Warning, fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
 	}
 
 	for _, result := range results.Matches {
-		status, conn := core.HostControl(result.Port, result.Ip_str)
+		status, conn := network.HostIsAccessible(result.Port, result.Ip_str)
 
 		if status {
 			go func(r model.SearchResult, c net.Conn) {
@@ -84,7 +86,7 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.Wa
 
 	gorillaCsrfCookie, gophishCsrfCookie, csrfToken := getGophishCsrfToken(searchResult, protocol)
 
-	req, err := core.PrepareRequest("POST", fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), fmt.Sprintf("username=%s&password=%s&csrf_token=%s", GOPHISH_DEFAULT_USER, GOPHISH_DEFAULT_PASSWORD, csrfToken))
+	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), fmt.Sprintf("username=%s&password=%s&csrf_token=%s", GOPHISH_DEFAULT_USER, GOPHISH_DEFAULT_PASSWORD, csrfToken))
 	if err != nil {
 		return
 	}
@@ -94,39 +96,39 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.Wa
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:88.0) Gecko/20100101 Firefox/88.0")
 
-	_, statusCode, _, err := core.SendRequest(req)
+	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
 		return
 	}
 
 	if statusCode == 302 {
-		core.CustomLogger("success", fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Stdout(log.Success, fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
 	} else {
-		core.CustomLogger("fail", fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Stdout(log.Fail, fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
 	}
 }
 
 func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (string, string, string) {
-	req, err := core.PrepareRequest("GET", fmt.Sprintf("%s%s:%d/", protocol, searchResult.Ip_str, searchResult.Port), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d/", protocol, searchResult.Ip_str, searchResult.Port), "")
 	if err != nil {
 		return "", "", ""
 	}
 
-	_, _, headers, err := core.SendRequest(req)
+	_, _, headers, err := network.SendRequest(req)
 	if err != nil {
 		return "", "", ""
 	}
 
 	gorillaCsrfCookie := url.QueryEscape(strings.TrimPrefix(strings.Split(headers.Get("Set-Cookie"), ";")[0], "_gorilla_csrf="))
 
-	req, err = core.PrepareRequest("GET", fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), "")
+	req, err = network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), "")
 	if err != nil {
 		return "", "", ""
 	}
 
 	req.AddCookie(&http.Cookie{Name: "_gorilla_csrf", Value: gorillaCsrfCookie})
 
-	body, _, headers, err := core.SendRequest(req)
+	body, _, headers, err := network.SendRequest(req)
 	if err != nil {
 		return "", "", ""
 	}

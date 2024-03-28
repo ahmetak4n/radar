@@ -1,9 +1,10 @@
-package core
+package utils
 
 import (
 	"os"
-
 	"strings"
+
+  "radar/internal/log"
 )
 
 func Contains(input string, array []string) (bool) {
@@ -24,7 +25,7 @@ func CreateFolder(path string) (error) {
 	err := os.MkdirAll(path, os.ModePerm)
 	
 	if (err != nil) {
-		CustomLogger("error", "An error occured when creating folder", err.Error())
+		log.Stdout(log.Error, "An error occured when creating folder", err.Error())
 	}
 
 	return err
@@ -33,7 +34,7 @@ func CreateFolder(path string) (error) {
 func CreateFile(path string) (*os.File, error) {
 	file, err := os.Create(path)
 	if (err != nil) {
-		CustomLogger("error", "An error occured when creating file", err.Error())
+		log.Stdout(log.Error, "An error occured when creating file", err.Error())
 	}
 
 	return file, err
