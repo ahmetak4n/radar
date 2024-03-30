@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"radar/internal/core"
+  "radar/internal/log"
 	"radar/internal/scanner"
 )
 
@@ -26,10 +26,10 @@ gophish
 `
 
 func menu() {
-	core.CustomLogger("banner", banner, "")
+	log.Stdout(log.Banner, banner, "")
 
 	if len(os.Args) < 2 {
-		core.CustomLogger("warning", "Invalid radar mod. Use -h for help", "")
+		log.Stdout(log.Warning, "Invalid radar mod. Use -h for help", "")
 		return
 	}
 
@@ -39,9 +39,9 @@ func menu() {
 	case "gophish":
 		gophish(os.Args[2:])
 	case "-h":
-		core.CustomLogger("banner", menuString, "")
+		log.Stdout(log.Banner, menuString, "")
 	default:
-		core.CustomLogger("warning", "Invalid radar mod. Use `radar -h` for help", "")
+		log.Stdout(log.Warning, "Invalid radar mod. Use `radar -h` for help", "")
 	}
 }
 
@@ -50,7 +50,7 @@ func sonarqube(args []string) {
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {
-		core.CustomLogger("error", "An error occured when parsing args. Use `radar sonarqube -h` for help", err.Error())
+		log.Stdout(log.Error, "An error occured when parsing args. Use `radar sonarqube -h` for help", err.Error())
 		return
 	}
 
@@ -60,7 +60,7 @@ func sonarqube(args []string) {
 	case "scd":
 		sonarqube.Scd()
 	default:
-		core.CustomLogger("warning", "Invalid `aT`. Use `radar sonarqube -h` for help", "")
+		log.Stdout(log.Warning, "Invalid `aT`. Use `radar sonarqube -h` for help", "")
 	}
 }
 
@@ -69,7 +69,7 @@ func gophish(args []string) {
 
 	err := gophish.Menu.Parse(args)
 	if err != nil {
-		core.CustomLogger("error", "An error occured when parsing args", err.Error())
+		log.Stdout(log.Error, "An error occured when parsing args", err.Error())
 		return
 	}
 
