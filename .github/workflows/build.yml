@@ -19,36 +19,13 @@ jobs:
         fetch-depth: 0
 
     - name: SetUpGo
-      uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9
+      uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
       with:
-        go-version: 1.18
+        go-version: 1.22
 
     - name: InstallDependencies
       run: |
         go get -u ./cmd/radar/
 
     - name: Build
-      run: go build -v ./cmd/radar/radar.go
-
-  sonarcloud:
-    uses: ahmetak4n/actions/.github/workflows/sonarcloud.yml@main
-    permissions:
-      contents: read
-    needs: build
-    with:
-      project-key: "ahmetak4n_radar"
-      organization: "ahmetak4n"
-      sources: "."
-      exclusions: "**/*_test.go"
-    secrets:
-      sonar-cloud-token: ${{ secrets.SONARCLOUD }}
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  semgrep:
-    uses: ahmetak4n/actions/.github/workflows/semgrep.yml@main
-    permissions:
-      contents: read
-      security-events: write
-    needs: build
-    secrets:
-      semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+      run: go build -v ./cmd/radar/main.go
