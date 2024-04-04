@@ -17,8 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        - language: go
-          build-mode: manual
+        include:
+          - language: go
+            build-mode: manual
 
     steps:
     - name: Checkout Code
