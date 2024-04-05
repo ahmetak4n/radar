@@ -5,6 +5,8 @@ on:
     types: [opened, edited, reopened, synchronize]
     branches:
       - master
+  
+  workflow_dispatch:
 
 jobs:
   build:
