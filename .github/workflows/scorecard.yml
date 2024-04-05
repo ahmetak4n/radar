@@ -1,4 +1,4 @@
-name: ScorecardSupplyChainSecurity
+name: ScorecardSupplyChainSecurity-Cron
 
 on:
   schedule:
