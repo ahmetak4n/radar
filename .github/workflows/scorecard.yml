@@ -1,11 +1,11 @@
-name: ScorecardSupplyChaingSecurity
+name: ScorecardSupplyChainSecurity
 
 on:
   schedule:
     - cron: '0 0 * * *'
 
   push:
-    branches: [ "master", "update/actions" ]
+    branches: [ "master" ]
 
 permissions: read-all
 
