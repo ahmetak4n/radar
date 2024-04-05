@@ -2,7 +2,7 @@ name: ScorecardSupplyChaingSecurity
 
 on:
   schedule:
-    - cron: '45 3 * * 6'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
