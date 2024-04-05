@@ -3,6 +3,8 @@ name: CodeQL
 on:
   schedule:
     - cron: '0 0 * * *'
+  push:
+    branches: [ * ] 
   workflow_dispatch:
 
 permissions:
