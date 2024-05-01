@@ -47,6 +47,9 @@ Download source code from detected sonarqube services
 Find gophish services
 ![gophish_how_to](https://github.com/ahmetak4n/radar/blob/master/gophish_how_to.png)
 
+# note
+You can set proxy via `http_proxy` or `https_proxy` environments variables for monitorin requests.
+
 # disclaimer
 Radar is developed for InfoSec persons. It should be used for authorized testing and/or educational purposes only.
 **I take no responsibility for the abuse of Radar**

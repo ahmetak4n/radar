@@ -4,7 +4,8 @@ import (
 	"os"
 
   "radar/internal/log"
-	"radar/internal/scanner"
+	"radar/internal/sonarqube"
+  "radar/internal/gophish"
 )
 
 var banner = `
@@ -14,6 +15,7 @@ ______  ___ ______  ___  ______          ______
 |    /|  _  | | | |  _  ||    /         |   .   | 
 | |\ \| | | | |/ /| | | || |\ \         |  .  x | 
 \_| \_\_| |_/___/ \_| |_/\_| \_|        \_______/ 
+
 `
 
 var menuString = `
@@ -22,7 +24,7 @@ sonarqube
 	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
 	-aK: Shodan API Key (Required when attacktype is "scan")
 gophish
-	-aK: Shodan API Key	
+	-aK: Shodan API Key
 `
 
 func menu() {
@@ -35,9 +37,9 @@ func menu() {
 
 	switch os.Args[1] {
 	case "sonarqube":
-		sonarqube(os.Args[2:])
+		sonarqubeMenu(os.Args[2:])
 	case "gophish":
-		gophish(os.Args[2:])
+		gophishMenu(os.Args[2:])
 	case "-h":
 		log.Stdout(log.Banner, menuString, "")
 	default:
@@ -45,8 +47,8 @@ func menu() {
 	}
 }
 
-func sonarqube(args []string) {
-	sonarqube := scanner.NewSonarQubeScanner()
+func sonarqubeMenu(args []string) {
+	sonarqube := sonarqube.NewSonarQubeScanner()
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {
@@ -64,8 +66,8 @@ func sonarqube(args []string) {
 	}
 }
 
-func gophish(args []string) {
-	gophish := scanner.NewGophishScanner()
+func gophishMenu(args []string) {
+	gophish := gophish.NewGophishScanner()
 
 	err := gophish.Menu.Parse(args)
 	if err != nil {

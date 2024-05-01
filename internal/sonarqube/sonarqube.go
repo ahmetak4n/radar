@@ -1,4 +1,4 @@
-package scanner
+package sonarqube
 
 import (
 	"flag"
@@ -18,7 +18,6 @@ import (
   "radar/internal/shodan"
   "radar/internal/utils"
   "radar/internal/log"
-	"radar/internal/model"
 )
 
 var (
@@ -70,27 +69,26 @@ func NewSonarQubeScanner() *SonarQubeScanner {
 }
 
 func (sonarqube SonarQubeScanner) Scan() {
-	var wg sync.WaitGroup
+  var wg sync.WaitGroup
 
 	if sonarqube.ShodanApiKey == "" {
 		log.Stdout(log.Error, "Shodan Api Key is required for `scan` attack type", "")
 		return
 	}
 
-	results := shodan.ShodanSearch("sonarqube", sonarqube.ShodanApiKey)
+  resultArray, err := shodan.Search(sonarqube.ShodanApiKey, "sonarqube")
+  if err != nil {
+    log.Stdout(log.Error, "SonarQube Scan ::: ", err.Error())
+    return 
+  }
 
-	if len(results.Matches) < 1 {
-		log.Stdout(log.Warning, "Shodan can not found any record!", "")
-		return
-	} else {
-		log.Stdout(log.Warning, fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
-	}
+  fmt.Println(len(resultArray.Matches))
 
-	for _, result := range results.Matches {
+	for _, result := range resultArray.Matches {
 		status, conn := network.HostIsAccessible(result.Port, result.Ip_str)
 
 		if status {
-			go func(r model.SearchResult, c net.Conn) {
+			go func(r shodan.HostSearchResult, c net.Conn) {
 				defer c.Close()
 				wg.Add(2)
 				checkSonarQubePublicProject(r, &wg)
@@ -113,7 +111,7 @@ func (sonarqube SonarQubeScanner) Scd() {
 
 	for i, fileComponent := range components {
 		if utils.Contains(fileComponent.Name, utils.CommonFileExtensions()) {
-			go func(file model.SonarProjectSubComponent) {
+			go func(file SonarProjectSubComponent) {
 				wg.Add(1)
 				createSourceCodeFileViaSonarQube(sonarqube.Hostname, sonarqube.Port, sonarqube.ProjectKey, file, &wg)
 			}(fileComponent)
@@ -127,7 +125,7 @@ func (sonarqube SonarQubeScanner) Scd() {
 	wg.Wait()
 }
 
-func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file model.SonarProjectSubComponent, wg *sync.WaitGroup) {
+func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file SonarProjectSubComponent, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	path := strings.Split(file.Path, file.Name)[0]
@@ -170,7 +168,7 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 	}
 }
 
-func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitGroup) {
+func checkSonarQubePublicProject(searchResult shodan.HostSearchResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH), "")
@@ -200,7 +198,7 @@ func checkSonarQubePublicProject(searchResult model.SearchResult, wg *sync.WaitG
 	}
 }
 
-func checkSonarQubeDefaultCredential(searchResult model.SearchResult, wg *sync.WaitGroup) {
+func checkSonarQubeDefaultCredential(searchResult shodan.HostSearchResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH), fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
@@ -222,8 +220,8 @@ func checkSonarQubeDefaultCredential(searchResult model.SearchResult, wg *sync.W
 	}
 }
 
-func getSonarQubeProjectCount(searchResult model.SearchResult) int {
-	result := model.SonarSearchProjects{}
+func getSonarQubeProjectCount(searchResult shodan.HostSearchResult) int {
+	result := SonarSearchProjects{}
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
 	if err != nil {
@@ -244,8 +242,8 @@ func getSonarQubeProjectCount(searchResult model.SearchResult) int {
 	return result.Paging.Total
 }
 
-func getSonarQubeProjectIssuesCount(searchResult model.SearchResult) (int, int, int, int) {
-	result := model.SonarSearchIssues{}
+func getSonarQubeProjectIssuesCount(searchResult shodan.HostSearchResult) (int, int, int, int) {
+	result := SonarSearchIssues{}
 	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
@@ -282,8 +280,8 @@ func getSonarQubeProjectIssuesCount(searchResult model.SearchResult) (int, int, 
 	return codeSmell, vulnerability, bug, securityHotspot
 }
 
-func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page int, count int) []model.SonarProjectSubComponent {
-	result := &model.SonarProjectComponentTree{}
+func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page int, count int) []SonarProjectSubComponent {
+	result := &SonarProjectComponentTree{}
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, hostname, port, SONAR_PROJECT_COMPONENT_PATH+fmt.Sprintf(SONAR_PROJECT_COMPONENT_PARAM, projectKey, page, count)), "")
 	if err != nil {
@@ -313,8 +311,8 @@ func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page
 	return result.Components
 }
 
-func getSonarQubeProjectCodes(hostname string, port int, projectKey string) *model.SonarProjectCodes {
-	result := &model.SonarProjectCodes{}
+func getSonarQubeProjectCodes(hostname string, port int, projectKey string) *SonarProjectCodes {
+	result := &SonarProjectCodes{}
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, hostname, port, fmt.Sprintf(SONAR_PROJECT_SOURCE_CODE_PATH, projectKey)), "")
 	if err != nil {

@@ -8,14 +8,14 @@ func Stdout(logType LogType, message string, err string) {
 	switch logType {
 	case Error:
 		if VERBOSE {
-			color.Red("[ERROR] " + message + " ::: " + err)
+      color.Red("[ERROR] ::: " + message + " ::: " + err)
 		}
 	case Warning:
-		color.Yellow("[WARNING] " + message)
+    color.Yellow("[WARNING] ::: " + message)
 	case Success:
-		color.Green("[SUCCESS] " + message)
+    color.Green("[SUCCESS] ::: " + message)
 	case Fail:
-		color.Red("[FAIL] " + message)
+    color.Red("[FAIL] ::: " + message)
 	case Banner:
 		color.Magenta(message)
 	}

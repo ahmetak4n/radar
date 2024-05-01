@@ -1,4 +1,4 @@
-package scanner
+package gophish
 
 import (
 	"sync"
@@ -16,7 +16,6 @@ import (
   "radar/internal/network"
   "radar/internal/shodan"
   "radar/internal/log"
-	"radar/internal/model"
 )
 
 var (
@@ -51,20 +50,17 @@ func (gophish GophishScanner) Scan() {
 		return
 	}
 
-	results := shodan.ShodanSearch("gophish", gophish.ShodanApiKey)
-
-	if len(results.Matches) < 1 {
-		log.Stdout(log.Warning, "Shodan can not found any record!", "")
-		return
-	} else {
-		log.Stdout(log.Warning, fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
-	}
+	results, err := shodan.Search(gophish.ShodanApiKey, "gophish")
+  if err != nil {
+    log.Stdout(log.Error, "Gophish Scan ::: ", err.Error())
+    return 
+  }
 
 	for _, result := range results.Matches {
 		status, conn := network.HostIsAccessible(result.Port, result.Ip_str)
 
 		if status {
-			go func(r model.SearchResult, c net.Conn) {
+			go func(r shodan.HostSearchResult, c net.Conn) {
 				defer c.Close()
 				wg.Add(1)
 				checkGophishkDefaultCredential(r, &wg)
@@ -75,7 +71,7 @@ func (gophish GophishScanner) Scan() {
 	wg.Wait()
 }
 
-func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.WaitGroup) {
+func checkGophishkDefaultCredential(searchResult shodan.HostSearchResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	protocol := "http://"
@@ -108,7 +104,7 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.Wa
 	}
 }
 
-func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (string, string, string) {
+func getGophishCsrfToken(searchResult shodan.HostSearchResult, protocol string) (string, string, string) {
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d/", protocol, searchResult.Ip_str, searchResult.Port), "")
 	if err != nil {
 		return "", "", ""
