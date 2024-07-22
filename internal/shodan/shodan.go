@@ -24,7 +24,7 @@ func Search(apiKey, keyword string) (SearchResult, error) {
 	}
 
 	totalPage := recordCounts / 100
-	// Remove ::: Will be remove after SQL integration
+	// Remove ::: Will be remove after Elasticsearch integration
 	totalPage = 1
 
 	for i := 1; i <= totalPage; i++ {
@@ -49,7 +49,7 @@ func Search(apiKey, keyword string) (SearchResult, error) {
 func getRecordCounts(apiKey, keyword string) (int, error) {
 	result := SearchResult{}
 
-	url := fmt.Sprintf("%s?key=%s&query=%s", SHODAN_HOST_COUNT_PATH, apiKey, keyword)
+	url := fmt.Sprintf("%s?key=%s&query=%s", HOST_COUNT, apiKey, keyword)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
@@ -62,7 +62,7 @@ func getRecordCounts(apiKey, keyword string) (int, error) {
 	}
 
 	if statusCode != 200 {
-		log.Stdout(log.Warning, fmt.Sprintf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode), "")
+		log.Warning(fmt.Sprintf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode))
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
@@ -79,7 +79,7 @@ func getRecordCounts(apiKey, keyword string) (int, error) {
 func searchWithPagination(keyword string, apiKey string, page int) (SearchResult, error) {
 	result := SearchResult{}
 
-	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", SHODAN_HOST_SEARCH_PATH, apiKey, keyword, page)
+	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", HOST_SEARCH, apiKey, keyword, page)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
@@ -92,7 +92,7 @@ func searchWithPagination(keyword string, apiKey string, page int) (SearchResult
 	}
 
 	if statusCode != 200 {
-		log.Stdout(log.Error, fmt.Sprintf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode), "")
+		log.Error(fmt.Sprintf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode), nil)
 	}
 
 	err = json.Unmarshal([]byte(body), &result)

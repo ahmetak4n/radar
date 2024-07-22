@@ -25,7 +25,7 @@ func CreateFolder(path string) (error) {
 	err := os.MkdirAll(path, os.ModePerm)
 	
 	if (err != nil) {
-		log.Stdout(log.Error, "An error occured when creating folder", err.Error())
+		log.Error("An error occured when creating folder", err)
 	}
 
 	return err
@@ -34,7 +34,7 @@ func CreateFolder(path string) (error) {
 func CreateFile(path string) (*os.File, error) {
 	file, err := os.Create(path)
 	if (err != nil) {
-		log.Stdout(log.Error, "An error occured when creating file", err.Error())
+		log.Error("An error occured when creating file", err)
 	}
 
 	return file, err

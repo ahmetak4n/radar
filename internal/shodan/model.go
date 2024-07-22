@@ -6,6 +6,6 @@ type SearchResult struct {
 }
 
 type Match struct {
-	Ip_str string `json:"ip_str"`
-	Port   int    `json:"port"`
+	Ip   string `json:"ip_str"`
+	Port int    `json:"port"`
 }

@@ -1,32 +1,48 @@
 package sonarqube
 
-type SonarSearchProjects struct {
-	Paging SonarSearchPaging `json:"paging"`
+import (
+	"flag"
+)
+
+type Scanner struct {
+	Menu *flag.FlagSet
+
+	AttackType string
+
+	ShodanApiKey string
+
+	Port       int
+	Hostname   string
+	ProjectKey string
 }
 
-type SonarSearchPaging struct {
+type SearchProject struct {
+	Paging Paging `json:"paging"`
+}
+
+type Paging struct {
 	Total int `json:"total"`
 }
 
-type SonarSearchIssues struct {
-	Facets []SonarSearchFacetsArray `json:"facets"`
+type Issues struct {
+	Facets []Facet `json:"facets"`
 }
 
-type SonarSearchFacetsArray struct {
-	Values []SonarSearchFacetsValue `json:"values"`
+type Facet struct {
+	Values []Value `json:"values"`
 }
 
-type SonarSearchFacetsValue struct {
+type Value struct {
 	Val   string `json:"val"`
 	Count int    `json:"count"`
 }
 
-type SonarProjectComponentTree struct {
-	Paging     SonarSearchPaging          `json:"paging"`
-	Components []SonarProjectSubComponent `json:"components"`
+type ComponentTree struct {
+	Paging     Paging      `json:"paging"`
+	Components []Component `json:"components"`
 }
 
-type SonarProjectSubComponent struct {
+type Component struct {
 	Key       string `json:"key"`
 	Name      string `json:"name"`
 	Path      string `json:"path"`
@@ -34,11 +50,11 @@ type SonarProjectSubComponent struct {
 	Qualifier string `json:"qualifier"`
 }
 
-type SonarProjectCodes struct {
-	Sources []SonarProjectSource `json:"sources"`
+type Line struct {
+	Sources []Source `json:"sources"`
 }
 
-type SonarProjectSource struct {
+type Source struct {
 	Line int    `json:"line"`
 	Code string `json:"code"`
 }

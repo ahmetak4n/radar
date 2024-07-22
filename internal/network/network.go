@@ -58,17 +58,17 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 }
 
 // Check target host is accessible or not
-func IsHostAccessible(ip string, port int) (net.Conn, error) {
+func HostConnection(ip string, port int) (net.Conn, error) {
 	var err error
 
 	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
 
 	if err != nil {
-		err = errors.New(fmt.Sprintf("IsHostAccessible ::: %s:%d - Host Not Accessible ::: %s", ip, port, err.Error()))
+		err = errors.New(fmt.Sprintf("HostConnection ::: %s:%d - Host Not Accessible ::: %s", ip, port, err.Error()))
 	}
 
 	if connection == nil {
-		err = errors.New(fmt.Sprintf("IsHostAccessible ::: %s:%d - Connection is Null", ip, port))
+		err = errors.New(fmt.Sprintf("HostConnection ::: %s:%d - Connection is Null", ip, port))
 	}
 
 	return connection, err

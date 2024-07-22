@@ -4,19 +4,22 @@ import (
 	"github.com/fatih/color"
 )
 
-func Stdout(logType LogType, message string, err string) {
-	switch logType {
-	case Error:
-		if VERBOSE {
-			color.Red("[ERROR] " + message + " ::: " + err)
-		}
-	case Warning:
-		color.Yellow("[WARNING] " + message)
-	case Success:
-		color.Green("[SUCCESS] " + message)
-	case Fail:
-		color.Red("[FAIL] " + message)
-	case Banner:
-		color.Magenta(message)
-	}
+func Banner(message string) {
+	color.Magenta(message)
+}
+
+func Success(message string) {
+	color.Green("[SUCCESS] " + message)
+}
+
+func Warning(message string) {
+	color.Yellow("[WARNING] " + message)
+}
+
+func Fail(message string) {
+	color.Red("[FAIL] " + message)
+}
+
+func Error(message string, err error) {
+	color.Yellow("[WARNING] " + message, err)
 }

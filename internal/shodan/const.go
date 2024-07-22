@@ -1,5 +1,7 @@
 package shodan
 
-const SHODAN_API_URL = "https://api.shodan.io"
-const SHODAN_HOST_SEARCH_PATH = SHODAN_API_URL + "/shodan/host/search"
-const SHODAN_HOST_COUNT_PATH = SHODAN_API_URL + "/shodan/host/count"
+const (
+	API_URL     = "https://api.shodan.io"
+	HOST_SEARCH = API_URL + "/shodan/host/search"
+	HOST_COUNT  = API_URL + "/shodan/host/count"
+)

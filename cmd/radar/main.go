@@ -28,10 +28,10 @@ gophish
 `
 
 func menu() {
-	log.Stdout(log.Banner, banner, "")
+	log.Banner(banner)
 
 	if len(os.Args) < 2 {
-		log.Stdout(log.Warning, "Invalid radar mod. Use -h for help", "")
+		log.Warning("Invalid radar mod. Use -h for help")
 		return
 	}
 
@@ -41,18 +41,18 @@ func menu() {
 	case "gophish":
 		gophishMenu(os.Args[2:])
 	case "-h":
-		log.Stdout(log.Banner, menuString, "")
+		log.Banner(menuString)
 	default:
-		log.Stdout(log.Warning, "Invalid radar mod. Use `radar -h` for help", "")
+		log.Warning("Invalid radar mod. Use `radar -h` for help")
 	}
 }
 
 func sonarqubeMenu(args []string) {
-	sonarqube := sonarqube.NewSonarQubeScanner()
+	sonarqube := sonarqube.NewScanner()
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when parsing args. Use `radar sonarqube -h` for help", err.Error())
+		log.Error("An error occured when parsing args. Use `radar sonarqube -h` for help", err)
 		return
 	}
 
@@ -62,7 +62,7 @@ func sonarqubeMenu(args []string) {
 	case "scd":
 		sonarqube.Scd()
 	default:
-		log.Stdout(log.Warning, "Invalid `aT`. Use `radar sonarqube -h` for help", "")
+		log.Warning("Invalid `aT`. Use `radar sonarqube -h` for help")
 	}
 }
 
