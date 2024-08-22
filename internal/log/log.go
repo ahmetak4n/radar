@@ -21,5 +21,9 @@ func Fail(message string) {
 }
 
 func Error(message string, err error) {
-	color.Yellow("[WARNING] " + message, err)
+	color.Red("[ERROR] " + message, err)
+}
+
+func ValidationError(message string) {
+	color.Red("[VALIDATION ERROR] " + message)
 }

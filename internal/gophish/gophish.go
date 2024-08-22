@@ -46,13 +46,13 @@ func (gophish GophishScanner) Scan() {
 	var wg sync.WaitGroup
 
 	if gophish.ShodanApiKey == "" {
-		log.Stdout(log.Error, "Shodan Api Key is required for scan", "")
+		log.Error("Shodan Api Key is required for scan", nil)
 		return
 	}
 
 	results, err := shodan.Search(gophish.ShodanApiKey, "gophish")
   if err != nil {
-    log.Stdout(log.Error, "Gophish Scan ::: ", err.Error())
+    log.Error("Gophish Scan ::: ", err)
     return 
   }
 
@@ -96,9 +96,9 @@ func checkGophishkDefaultCredential(match shodan.Match, wg *sync.WaitGroup) {
 	}
 
 	if statusCode == 302 {
-		log.Stdout(log.Success, fmt.Sprintf("Default Credential Work - %s:%d", match.Ip, match.Port), "")
+		log.Success(fmt.Sprintf("Default Credential Work - %s:%d", match.Ip, match.Port))
 	} else {
-		log.Stdout(log.Fail, fmt.Sprintf("Default Credential Not Work - %s:%d", match.Ip, match.Port), "")
+		log.Fail(fmt.Sprintf("Default Credential Not Work - %s:%d", match.Ip, match.Port))
 	}
 }
 

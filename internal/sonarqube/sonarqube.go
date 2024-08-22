@@ -20,7 +20,7 @@ import (
 	"radar/internal/utils"
 )
 
-// / Parse user supplied parameter and create a sonarqube scanner
+// Parse user supplied parameter and create a sonarqube scanner
 func NewScanner() *Scanner {
 	scanner := &Scanner{}
 
@@ -37,19 +37,19 @@ func NewScanner() *Scanner {
 	return scanner
 }
 
-// / Find sonarqube instance on shodan
-// / Detect misconfigured sonarqubes and show details
+// Find sonarqube instance on shodan
+// Detect misconfigured sonarqubes and show details
 func (sonarqube Scanner) Scan() {
 	var wg sync.WaitGroup
 
 	if sonarqube.ShodanApiKey == "" {
-		log.Fail("Shodan Api Key is required for SonarQube attacks")
+		log.ValidationError("Shodan Api Key is required for SonarQube attacks")
 		return
 	}
 
 	searchResult, err := shodan.Search(sonarqube.ShodanApiKey, "sonarqube")
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "", errors.Unwrap(err).Error())
+		log.Error("An error occured while during shodan search", err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (sonarqube Scanner) Scan() {
 		connection, err := network.HostConnection(result.Ip, result.Port)
 
 		if err != nil {
-			// TODO -log.Stdout(log.Error, "", errors.Unwrap(err).Error())
+			log.Error("Sonarqube.Scan ::: ", err)
 			break
 		}
 
@@ -140,20 +140,20 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 	}
 }
 
-// / Get details on detected SonarQube
-// / Like issue, vulnerability, code smell counts, etc.
+// Get details on detected SonarQube
+// Like issue, vulnerability, code smell counts, etc.
 func checkSonarQubeDetail(searchResult shodan.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_USER_CURRENT), "")
 	if err != nil {
-		//TODO - log.Stdout(log.Error, "sonarqube.checkSonarQubeDetail ::: ", err.Error())
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
 		return
 	}
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		//TODO - log.Stdout(log.Error, "sonarqube.checkSonarQubeDetail ::: ", err.Error())
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
 		return
 	}
 
@@ -182,7 +182,7 @@ func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 
 	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_AUTHENTICATION_LOGIN), fmt.Sprintf("login=%s&password=%s", DEFAULT_USER, DEFAULT_PASSWORD))
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "", err.Error())
+		log.Error("", err)
 		return
 	}
 
@@ -190,7 +190,7 @@ func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "", err.Error())
+		log.Error("", err)
 		return
 	}
 
@@ -206,24 +206,24 @@ func getProjectCount(searchResult shodan.Match) int {
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_COMPONENTS_SEARCH_PROJECTS), "")
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: ", err.Error())
+		log.Error("sonarqube.getProjectCount ::: ", err)
 		return 0
 	}
 
 	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: ", err.Error())
+		log.Error("sonarqube.getProjectCount ::: ", err)
 		return 0
 	}
 
 	if statusCode != 200 {
-		// TODO - log.Stdout(log.Error, fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), "")
+		log.Error(fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
 		return 0
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectCount ::: An error occured when deserialize object", err.Error())
+		log.Error("sonarqube.getProjectCount ::: An error occured when deserialize object", err)
 		return 0
 	}
 
@@ -236,24 +236,24 @@ func getProjectIssuesCount(searchResult shodan.Match) (int, int, int, int) {
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_ISSUE_SEARCH), "")
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: ", err.Error())
+		log.Error("sonarqube.getProjectIssuesCount ::: ", err)
 		return 0, 0, 0, 0
 	}
 
 	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: ", err.Error())
+		log.Error("sonarqube.getProjectIssuesCount ::: ", err)
 		return 0, 0, 0, 0
 	}
 
 	if statusCode != 200 {
-		// TODO - log.Stdout(log.Error, fmt.Sprintf("sonarqube.getProjectIssuesCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), "")
+		log.Error(fmt.Sprintf("sonarqube.getProjectIssuesCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
 		return 0, 0, 0, 0
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		// TODO - log.Stdout(log.Error, "sonarqube.getProjectIssuesCount ::: An error occured when deserialize object", err.Error())
+		log.Error("sonarqube.getProjectIssuesCount ::: An error occured when deserialize object", err)
 		return 0, 0, 0, 0
 	}
 

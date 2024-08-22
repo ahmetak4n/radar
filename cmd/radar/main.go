@@ -71,7 +71,7 @@ func gophishMenu(args []string) {
 
 	err := gophish.Menu.Parse(args)
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when parsing args", err.Error())
+		log.Error("An error occured when parsing args", err)
 		return
 	}
 

@@ -2,14 +2,15 @@ package elasticsearch
 
 import (
   "fmt"
-  "bytes"
-  "encoding/json"
+  "context"
 
   "github.com/elastic/go-elasticsearch/v8"  
 )
 
 // Create new Elasticsearch client
-func NewClient() (*elasticsearch.Client, error) {
+// TODO - Elasticsearch endpoint will be parametric
+// TODO - XPackSecurity support will be added
+func newTypedClient() (*elasticsearch.TypedClient, error) {
 
   cfg := elasticsearch.Config {
     Addresses: []string { 
@@ -17,7 +18,7 @@ func NewClient() (*elasticsearch.Client, error) {
     },
   }
 
-  es, err := elasticsearch.NewClient(cfg)
+  es, err := elasticsearch.NewTypedClient(cfg)
   if err != nil {
     return nil, fmt.Errorf("Elasticsearch.NewClient ::: %w", err)    
   }
@@ -25,29 +26,22 @@ func NewClient() (*elasticsearch.Client, error) {
   return es, nil
 }
 
-// Generic method for put data to elasticsearch
-func AddData(index string, object interface{}) (error) {
+// Generic method for put data to specific index on elasticsearch
+func AddData(index string, id string, object interface{}) (error) {
 
-  es, err := NewClient()
+  es, err := newTypedClient()
   if err != nil {
     return fmt.Errorf("Elasticsearch.AddData ::: %w", err)
   }
 
-  data, err := json.Marshal(object)
-  if err != nil {
-    return fmt.Errorf("Elasticsearch.AddData ::: %w", err)
-  }
-
-  _, err = es.Index(index,bytes.NewReader(data))
+  _, err = es.Index(index).
+    Id(id).
+    Request(object).
+    Do(context.Background())
+  
   if err != nil {
     return fmt.Errorf("Elasticsearch.AddData ::: %w", err)
   }
 
   return nil
-}
-
-func CreateIndex(index string) {
-  es := NewClient()
-
-  res, err := es.Indices.Create("radar-create")
 }
