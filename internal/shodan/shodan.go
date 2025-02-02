@@ -3,10 +3,11 @@ package shodan
 import (
 	"encoding/json"
 	"fmt"
-  "golang.org/x/sync/errgroup"
 
+	"golang.org/x/sync/errgroup"
+
+	"radar/internal/elasticsearch"
 	"radar/internal/log"
-  "radar/internal/elasticsearch"
 	"radar/internal/network"
 )
 
@@ -15,24 +16,23 @@ import (
 // Error Group Wait used instead of Wait Group for handling request in goroutine
 func Search(apiKey, keyword string) (SearchResult, error) {
 	var err error
-  var errorGroup errgroup.Group
+	var errorGroup errgroup.Group
 
 	result := SearchResult{}
-  
-  errorGroup.Go(func() (error) {
-    tmpResult, err := searchWithoutPagination(keyword, apiKey)
-    result.Matches = append(result.Matches, tmpResult.Matches...)
-    return err
+
+	errorGroup.Go(func() error {
+		tmpResult, err := searchWithoutPagination(keyword, apiKey)
+		result.Matches = append(result.Matches, tmpResult.Matches...)
+		return err
 	})
 
-  err = errorGroup.Wait()
-  if err != nil {
-    return result, fmt.Errorf("shondan.Search ::: %w", err)
-  }
+	err = errorGroup.Wait()
+	if err != nil {
+		return result, fmt.Errorf("shondan.Search ::: %w", err)
+	}
 
 	return result, nil
 }
-
 
 // Search user supplied keyword on Shodan with paid account
 // Shodan return maximum 100 record per page if search result has more than 100 record
@@ -49,19 +49,19 @@ func SearchEnterprise(apiKey, keyword string) (SearchResult, error) {
 	}
 
 	totalPage := recordCounts / 100
-	
+
 	for i := 1; i <= totalPage; i++ {
-		errorGroup.Go(func() (error) {
-      tmpResult, err := searchWithPagination(keyword, apiKey, i)
-      result.Matches = append(result.Matches, tmpResult.Matches...)
-      return err
+		errorGroup.Go(func() error {
+			tmpResult, err := searchWithPagination(keyword, apiKey, i)
+			result.Matches = append(result.Matches, tmpResult.Matches...)
+			return err
 		})
 	}
 
-  err = errorGroup.Wait()
-  if err != nil {
-    return result, fmt.Errorf("shondan.SearchEnterprise ::: %w", err)
-  }
+	err = errorGroup.Wait()
+	if err != nil {
+		return result, fmt.Errorf("shondan.SearchEnterprise ::: %w", err)
+	}
 
 	return result, nil
 }
@@ -99,7 +99,7 @@ func getRecordCounts(apiKey, keyword string) (int, error) {
 // The function must use with goroutine and take waiting group as an input
 // If status code different from 200, print warning log to console
 func searchWithoutPagination(keyword string, apiKey string) (SearchResult, error) {
-  result := SearchResult{}
+	result := SearchResult{}
 
 	url := fmt.Sprintf("%s?key=%s&query=%s", HOST_SEARCH, apiKey, keyword)
 
@@ -122,10 +122,10 @@ func searchWithoutPagination(keyword string, apiKey string) (SearchResult, error
 		return result, fmt.Errorf("shondan.searchWithoutPagination ::: An error occured while unmarshing response ::: %w", err)
 	}
 
-  err = saveSearchResult(result)
-  if err != nil {
-    return result, fmt.Errorf("shondan.searchWithoutPagination ::: %w", err)
-  }
+	err = saveSearchResult(result)
+	if err != nil {
+		return result, fmt.Errorf("shondan.searchWithoutPagination ::: %w", err)
+	}
 
 	return result, nil
 }
@@ -134,7 +134,7 @@ func searchWithoutPagination(keyword string, apiKey string) (SearchResult, error
 // The function must use with goroutine and take waiting group as an input
 // If status code different from 200, print warning log to console
 func searchWithPagination(keyword string, apiKey string, page int) (SearchResult, error) {
-  result := SearchResult{}
+	result := SearchResult{}
 
 	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", HOST_SEARCH, apiKey, keyword, page)
 
@@ -157,23 +157,23 @@ func searchWithPagination(keyword string, apiKey string, page int) (SearchResult
 		return result, fmt.Errorf("shondan.searchWithPagination ::: An error occured while unmarshing response ::: %w", err)
 	}
 
-  err = saveSearchResult(result)
-  if err != nil {
-    return result, fmt.Errorf("shondan.searchWithPagination ::: An error occured while adding data to Elasticsearch ::: %w", err)
-  }
+	err = saveSearchResult(result)
+	if err != nil {
+		return result, fmt.Errorf("shondan.searchWithPagination ::: An error occured while adding data to Elasticsearch ::: %w", err)
+	}
 
 	return result, nil
 }
 
 // Write search result to Elasticsearch
 // The function save every IP as a new record
-func saveSearchResult(searchResult SearchResult) (error) {
-  var err error
+func saveSearchResult(searchResult SearchResult) error {
+	var err error
 
-  for _, result := range searchResult.Matches {
-    id := fmt.Sprintf("%s:%d", result.Ip, result.Port)
-    err =  elasticsearch.AddData("shodan-sonarqube-search", id, result)
-  }
-  
-  return err
+	for _, result := range searchResult.Matches {
+		id := fmt.Sprintf("%s:%d", result.Ip, result.Port)
+		err = elasticsearch.AddData("shodan-sonarqube-search", id, result)
+	}
+
+	return err
 }

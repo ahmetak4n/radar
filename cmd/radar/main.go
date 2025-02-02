@@ -2,10 +2,9 @@ package main
 
 import (
 	"os"
-
-  "radar/internal/log"
+	"radar/internal/gophish"
+	"radar/internal/log"
 	"radar/internal/sonarqube"
-  "radar/internal/gophish"
 )
 
 var banner = `

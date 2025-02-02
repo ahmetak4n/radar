@@ -7,15 +7,15 @@ import (
 	"fmt"
 
 	"net"
-  "net/http"
+	"net/http"
 	"net/url"
 
 	"html"
 	"strings"
 
-  "radar/internal/network"
-  "radar/internal/shodan"
-  "radar/internal/log"
+	"radar/internal/log"
+	"radar/internal/network"
+	"radar/internal/shodan"
 )
 
 var (
@@ -51,19 +51,19 @@ func (gophish GophishScanner) Scan() {
 	}
 
 	results, err := shodan.Search(gophish.ShodanApiKey, "gophish")
-  if err != nil {
-    log.Error("Gophish Scan ::: ", err)
-    return 
-  }
+	if err != nil {
+		log.Error("Gophish Scan ::: ", err)
+		return
+	}
 
 	for _, result := range results.Matches {
 		conn, err := network.HostConnection(result.Ip, result.Port)
 
-    if err != nil {
-      fmt.Errorf("Gophish.Scan ::: An error occured while connecting host ::: %w", err)
-    }
+		if err != nil {
+			fmt.Errorf("Gophish.Scan ::: An error occured while connecting host ::: %w", err)
+		}
 
-    go func(r shodan.Match, c net.Conn) {
+		go func(r shodan.Match, c net.Conn) {
 			defer c.Close()
 			wg.Add(1)
 			checkGophishkDefaultCredential(r, &wg)
