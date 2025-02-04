@@ -1,4 +1,4 @@
-package shodan
+package search
 
 import (
 	"encoding/json"
@@ -6,53 +6,42 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"radar/internal/elasticsearch"
 	"radar/internal/log"
 	"radar/internal/network"
+	"radar/pkg/elasticsearch"
 )
 
 // Search user supplied keyword on Shodan with free account
 // Shodan doesn't support pagination and return maximum 100 record for non-paid accounts
 // Error Group Wait used instead of Wait Group for handling request in goroutine
-func Search(apiKey, keyword string) (SearchResult, error) {
-	var err error
-	var errorGroup errgroup.Group
-
-	result := SearchResult{}
-
-	errorGroup.Go(func() error {
-		tmpResult, err := searchWithoutPagination(keyword, apiKey)
-		result.Matches = append(result.Matches, tmpResult.Matches...)
-		return err
-	})
-
-	err = errorGroup.Wait()
+func (s *Shodan) Search() (ShodanSearchResult, error) {
+	result, err := s.searchWithoutPagination()
 	if err != nil {
-		return result, fmt.Errorf("shondan.Search ::: %w", err)
+		err = fmt.Errorf("shondan.Search ::: %w", err)
 	}
 
-	return result, nil
+	return result, err
 }
 
 // Search user supplied keyword on Shodan with paid account
 // Shodan return maximum 100 record per page if search result has more than 100 record
 // Then the function will visit every page one by one
 // Error Group Wait used instead of Wait Group for handling request in goroutine
-func SearchEnterprise(apiKey, keyword string) (SearchResult, error) {
+func (s *Shodan) SearchWithPagination() (ShodanSearchResult, error) {
 	var errorGroup errgroup.Group
 
-	result := SearchResult{}
+	result := ShodanSearchResult{}
 
-	recordCounts, err := getRecordCounts(apiKey, keyword)
+	recordCounts, err := s.getRecordCounts()
 	if err != nil {
-		return result, fmt.Errorf("shodan.SearchEnterprise ::: %w", err)
+		return result, fmt.Errorf("shodan.SearchWithPagination ::: %w", err)
 	}
 
 	totalPage := recordCounts / 100
 
 	for i := 1; i <= totalPage; i++ {
 		errorGroup.Go(func() error {
-			tmpResult, err := searchWithPagination(keyword, apiKey, i)
+			tmpResult, err := s.searchWithPagination(i)
 			result.Matches = append(result.Matches, tmpResult.Matches...)
 			return err
 		})
@@ -68,10 +57,10 @@ func SearchEnterprise(apiKey, keyword string) (SearchResult, error) {
 
 // Get record counts that searched by keyword on Shodan
 // If status code different from 200, print warning log to console
-func getRecordCounts(apiKey, keyword string) (int, error) {
-	result := SearchResult{}
+func (s *Shodan) getRecordCounts() (int, error) {
+	result := ShodanSearchResult{}
 
-	url := fmt.Sprintf("%s?key=%s&query=%s", HOST_COUNT, apiKey, keyword)
+	url := fmt.Sprintf("%s?key=%s&query=%s", SHODAN_HOST_COUNT, s.ApiKey, s.Keyword)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
@@ -98,10 +87,10 @@ func getRecordCounts(apiKey, keyword string) (int, error) {
 // Search keyword on Shodan without page parameter
 // The function must use with goroutine and take waiting group as an input
 // If status code different from 200, print warning log to console
-func searchWithoutPagination(keyword string, apiKey string) (SearchResult, error) {
-	result := SearchResult{}
+func (s *Shodan) searchWithoutPagination() (ShodanSearchResult, error) {
+	result := ShodanSearchResult{}
 
-	url := fmt.Sprintf("%s?key=%s&query=%s", HOST_SEARCH, apiKey, keyword)
+	url := fmt.Sprintf("%s?key=%s&query=%s", SHODAN_HOST_SEARCH, s.ApiKey, s.Keyword)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
@@ -133,10 +122,10 @@ func searchWithoutPagination(keyword string, apiKey string) (SearchResult, error
 // Search keyword on Shodan with page parameter
 // The function must use with goroutine and take waiting group as an input
 // If status code different from 200, print warning log to console
-func searchWithPagination(keyword string, apiKey string, page int) (SearchResult, error) {
-	result := SearchResult{}
+func (s *Shodan) searchWithPagination(page int) (ShodanSearchResult, error) {
+	result := ShodanSearchResult{}
 
-	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", HOST_SEARCH, apiKey, keyword, page)
+	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", SHODAN_HOST_SEARCH, s.ApiKey, s.Keyword, page)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
@@ -167,7 +156,7 @@ func searchWithPagination(keyword string, apiKey string, page int) (SearchResult
 
 // Write search result to Elasticsearch
 // The function save every IP as a new record
-func saveSearchResult(searchResult SearchResult) error {
+func saveSearchResult(searchResult ShodanSearchResult) error {
 	var err error
 
 	for _, result := range searchResult.Matches {

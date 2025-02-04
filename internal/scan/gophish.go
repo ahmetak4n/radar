@@ -1,21 +1,7 @@
-package gophish
+package scan
 
 import (
-	"sync"
-
 	"flag"
-	"fmt"
-
-	"net"
-	"net/http"
-	"net/url"
-
-	"html"
-	"strings"
-
-	"radar/internal/log"
-	"radar/internal/network"
-	"radar/internal/shodan"
 )
 
 var (
@@ -42,6 +28,7 @@ func NewGophishScanner() *GophishScanner {
 	return gophishScanner
 }
 
+/*
 func (gophish GophishScanner) Scan() {
 	var wg sync.WaitGroup
 
@@ -50,7 +37,7 @@ func (gophish GophishScanner) Scan() {
 		return
 	}
 
-	results, err := shodan.Search(gophish.ShodanApiKey, "gophish")
+	results, err := search.Search("gophish")
 	if err != nil {
 		log.Error("Gophish Scan ::: ", err)
 		return
@@ -135,3 +122,4 @@ func getGophishCsrfToken(match shodan.Match, protocol string) (string, string, s
 
 	return gorillaCsrfCookie, gophishCsrfCookie, csrfToken
 }
+*/

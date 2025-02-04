@@ -2,9 +2,8 @@ package main
 
 import (
 	"os"
-	"radar/internal/gophish"
 	"radar/internal/log"
-	"radar/internal/sonarqube"
+	"radar/internal/scan"
 )
 
 var banner = `
@@ -47,7 +46,7 @@ func menu() {
 }
 
 func sonarqubeMenu(args []string) {
-	sonarqube := sonarqube.NewScanner()
+	sonarqube := scan.NewSonarqube()
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {
@@ -59,14 +58,14 @@ func sonarqubeMenu(args []string) {
 	case "scan":
 		sonarqube.Scan()
 	case "scd":
-		sonarqube.Scd()
+		//sonarqube.Scd()
 	default:
 		log.Warning("Invalid `aT`. Use `radar sonarqube -h` for help")
 	}
 }
 
 func gophishMenu(args []string) {
-	gophish := gophish.NewGophishScanner()
+	/*gophish := gophish.NewGophishScanner()
 
 	err := gophish.Menu.Parse(args)
 	if err != nil {
@@ -74,7 +73,7 @@ func gophishMenu(args []string) {
 		return
 	}
 
-	gophish.Scan()
+	gophish.Scan()*/
 }
 
 func main() {

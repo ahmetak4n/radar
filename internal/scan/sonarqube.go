@@ -1,55 +1,44 @@
-package sonarqube
+package scan
 
 import (
 	"flag"
 	"fmt"
-	"strings"
-
-	"html"
-	"regexp"
 
 	"net"
 	"sync"
 
-	"encoding/json"
-	"strconv"
-
 	"radar/internal/log"
 	"radar/internal/network"
-	"radar/internal/shodan"
-	"radar/internal/utils"
+	"radar/internal/search"
 )
 
 // Parse user supplied parameter and create a sonarqube scanner
-func NewScanner() *Scanner {
-	scanner := &Scanner{}
+func NewSonarqube() *Sonarqube {
+	sonarqube := &Sonarqube{}
 
 	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
 
-	menu.StringVar(&scanner.AttackType, "aT", "scan", "attack type: scan | scd (source code download)")
-	menu.StringVar(&scanner.ShodanApiKey, "aK", "", "shodan api key (Required when attacktype scan)")
-	menu.IntVar(&scanner.Port, "p", 9000, "sonarqube port (Required when attacktype scd)")
-	menu.StringVar(&scanner.Hostname, "host", "", "sonarqube hostname or Ip (Required when attacktype scd)")
-	menu.StringVar(&scanner.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
+	menu.StringVar(&sonarqube.AttackType, "attack-type", "scan", "attack type: scan | scd (source code download)")
+	menu.StringVar(&sonarqube.SearchEngine, "search-engine", "shodan", "search engine: shodan | fofa | shodan-enterprise")
+	menu.StringVar(&sonarqube.SearchEngineApiKey, "search-engine-api-key", "", "shodan api key (Required when attacktype scan)")
+	menu.IntVar(&sonarqube.Port, "port", 9000, "sonarqube port (Required when attacktype scd)")
+	menu.StringVar(&sonarqube.Hostname, "host", "", "sonarqube hostname or Ip (Required when attacktype scd)")
+	menu.StringVar(&sonarqube.ProjectKey, "project-key", "", "project key that want to download source code (Required when attacktype scd)")
 
-	scanner.Menu = menu
+	sonarqube.Menu = menu
 
-	return scanner
+	return sonarqube
 }
 
 // Find sonarqube instance on shodan
 // Detect misconfigured sonarqubes and show details
-func (sonarqube Scanner) Scan() {
+func (sonarqube Sonarqube) Scan() {
 	var wg sync.WaitGroup
+	var searchResult search.ShodanSearchResult
 
-	if sonarqube.ShodanApiKey == "" {
-		log.ValidationError("Shodan Api Key is required for SonarQube attacks")
-		return
-	}
-
-	searchResult, err := shodan.Search(sonarqube.ShodanApiKey, "sonarqube")
+	searchResult, err := sonarqube.search()
 	if err != nil {
-		log.Error("An error occured while during shodan search", err)
+		log.Error(fmt.Sprintf("An error occured while during search on %s", sonarqube.SearchEngine), err)
 		return
 	}
 
@@ -61,18 +50,18 @@ func (sonarqube Scanner) Scan() {
 			break
 		}
 
-		go func(r shodan.Match, c net.Conn) {
+		go func(r search.ShodanMatch, c net.Conn) {
 			defer c.Close()
 			wg.Add(2)
-			checkSonarQubeDetail(r, &wg)
-			checkDefaultCredential(r, &wg)
+			//checkSonarQubeDetail(r, &wg)
+			//checkDefaultCredential(r, &wg)
 		}(result, connection)
 	}
 
 	wg.Wait()
 }
 
-func (sonarqube Scanner) Scd() {
+/*func (sonarqube Sonarqube) Scd() {
 	var wg sync.WaitGroup
 	components := getSonarQubeProjectFiles(sonarqube.Hostname, sonarqube.Port, sonarqube.ProjectKey, 1, 500)
 
@@ -95,8 +84,34 @@ func (sonarqube Scanner) Scd() {
 	}
 
 	wg.Wait()
+}*/
+
+// Search sonarqube instance on search engines
+func (sonarqube Sonarqube) search() (search.ShodanSearchResult, error) {
+	var err error
+	var searchResult search.ShodanSearchResult
+
+	switch sonarqube.SearchEngine {
+	case "shodan-enterprise":
+		shodan := search.Shodan{
+			ApiKey:  sonarqube.SearchEngineApiKey,
+			License: "enterprise",
+			Keyword: "sonarqube",
+		}
+		searchResult, err = shodan.SearchWithPagination()
+	default:
+		shodan := search.Shodan{
+			ApiKey:  sonarqube.SearchEngineApiKey,
+			License: "free",
+			Keyword: "sonarqube",
+		}
+		searchResult, err = shodan.Search()
+	}
+
+	return searchResult, err
 }
 
+/*
 func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -230,11 +245,11 @@ func getProjectCount(searchResult shodan.Match) int {
 	return result.Paging.Total
 }
 
-func getProjectIssuesCount(searchResult shodan.Match) (int, int, int, int) {
+func getProjectIssuesCount(searchResult search.Match) (int, int, int, int) {
 	result := Issues{}
 	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_ISSUE_SEARCH), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_ISSUE_SEARCH), "")
 	if err != nil {
 		log.Error("sonarqube.getProjectIssuesCount ::: ", err)
 		return 0, 0, 0, 0
@@ -340,3 +355,4 @@ func clearHtmlTagFromSonarQubeCodeFile(code string) string {
 
 	return c
 }
+*/
