@@ -19,10 +19,17 @@ ______  ___ ______  ___  ______          ______
 var menuString = `
 Radar has two mod: sonarqube|gophish
 sonarqube
-	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
-	-aK: Shodan API Key (Required when attacktype is "scan")
+	-attack-type: scan | scd (Default: scan)
+	-search-engine: shodan | fofa | shodan-enterprise (Default: shodan)
+	-search-engine-api-key: <shodan-api-key> (Required)
+
+Required when attack-type: scd
+	-port: <sonarqube-port> (Default: 9000)
+	-host: <sonarqube-host> 
+	-project-key: <sonarqube-project-key>
 gophish
-	-aK: Shodan API Key
+	-search-engine: shodan | fofa | shodan-enterprise (Default: shodan)
+	-search-engine-api-key: <shodan-api-key> (Required)
 `
 
 func menu() {
