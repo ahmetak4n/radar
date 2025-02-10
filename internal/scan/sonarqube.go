@@ -30,7 +30,6 @@ func NewSonarqube() *Sonarqube {
 	return sonarqube
 }
 
-// Find sonarqube instance on shodan
 // Detect misconfigured sonarqubes and show details
 func (sonarqube Sonarqube) Scan() {
 	var wg sync.WaitGroup
@@ -61,6 +60,28 @@ func (sonarqube Sonarqube) Scan() {
 	wg.Wait()
 }
 
+// Search sonarqube instance on search engines
+func (sonarqube Sonarqube) search() (search.ShodanSearchResult, error) {
+	var err error
+	var searchResult search.ShodanSearchResult
+
+	shodan := search.Shodan{
+		ApiKey:  sonarqube.SearchEngineApiKey,
+		Keyword: "sonarqube",
+	}
+
+	switch sonarqube.SearchEngine {
+	case "shodan-enterprise":
+		shodan.License = "enterprise"
+	default:
+		shodan.License = "free"
+	}
+
+	searchResult, err = shodan.Search()
+
+	return searchResult, err
+}
+
 /*func (sonarqube Sonarqube) Scd() {
 	var wg sync.WaitGroup
 	components := getSonarQubeProjectFiles(sonarqube.Hostname, sonarqube.Port, sonarqube.ProjectKey, 1, 500)
@@ -84,34 +105,8 @@ func (sonarqube Sonarqube) Scan() {
 	}
 
 	wg.Wait()
-}*/
-
-// Search sonarqube instance on search engines
-func (sonarqube Sonarqube) search() (search.ShodanSearchResult, error) {
-	var err error
-	var searchResult search.ShodanSearchResult
-
-	switch sonarqube.SearchEngine {
-	case "shodan-enterprise":
-		shodan := search.Shodan{
-			ApiKey:  sonarqube.SearchEngineApiKey,
-			License: "enterprise",
-			Keyword: "sonarqube",
-		}
-		searchResult, err = shodan.SearchWithPagination()
-	default:
-		shodan := search.Shodan{
-			ApiKey:  sonarqube.SearchEngineApiKey,
-			License: "free",
-			Keyword: "sonarqube",
-		}
-		searchResult, err = shodan.Search()
-	}
-
-	return searchResult, err
 }
 
-/*
 func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey string, file Component, wg *sync.WaitGroup) {
 	defer wg.Done()
 

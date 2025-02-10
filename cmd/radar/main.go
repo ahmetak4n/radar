@@ -19,8 +19,8 @@ ______  ___ ______  ___  ______          ______
 var menuString = `
 Radar has two mod: sonarqube|gophish
 sonarqube
-	-attack-type: scan | scd (Default: scan)
-	-search-engine: shodan | fofa | shodan-enterprise (Default: shodan)
+	-attack-type: <scan|scd> (Default: scan)
+	-search-engine: <shodan|shodan-enterprise|fofa> (Default: shodan)
 	-search-engine-api-key: <shodan-api-key> (Required)
 
 Required when attack-type: scd
@@ -28,7 +28,7 @@ Required when attack-type: scd
 	-host: <sonarqube-host> 
 	-project-key: <sonarqube-project-key>
 gophish
-	-search-engine: shodan | fofa | shodan-enterprise (Default: shodan)
+	-search-engine: <shodan|fofa|shodan-enterprise> (Default: shodan)
 	-search-engine-api-key: <shodan-api-key> (Required)
 `
 
