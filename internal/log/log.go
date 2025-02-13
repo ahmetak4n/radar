@@ -21,7 +21,10 @@ func Fail(message string) {
 }
 
 func Error(message string, err error) {
-	color.Red("[ERROR] " + message, err)
+	if VERBOSE {
+		color.Red()
+	}
+	color.Red("[ERROR] "+message, err)
 }
 
 func ValidationError(message string) {

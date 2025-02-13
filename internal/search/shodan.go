@@ -16,21 +16,20 @@ import (
 // Then the function will visit every page one by one
 // Error Group Wait used instead of Wait Group for handling request in goroutine
 func (s *Shodan) Search() (ShodanSearchResult, error) {
+	var err error
 	var errorGroup errgroup.Group
 
 	result := ShodanSearchResult{}
 
-	switch s.License {
-	case "free":
-		result, err := s.search(1)
+	if s.License == "free" {
+		result, err = s.search(1)
 		if err != nil {
-			return result, fmt.Errorf("shodan.Search ::: %w", err)
+			return result, err
 		}
-
-	case "enterprise":
+	} else if s.License == "enterprise" {
 		recordCounts, err := s.getRecordCounts()
 		if err != nil {
-			return result, fmt.Errorf("shodan.Search ::: %w", err)
+			return result, err
 		}
 		totalPage := recordCounts / 100
 
@@ -41,10 +40,9 @@ func (s *Shodan) Search() (ShodanSearchResult, error) {
 				return err
 			})
 		}
-
 		err = errorGroup.Wait()
 		if err != nil {
-			return result, fmt.Errorf("shondan.SearchEnterprise ::: %w", err)
+			return result, err
 		}
 	}
 
@@ -60,21 +58,21 @@ func (s *Shodan) getRecordCounts() (int, error) {
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
-		return 0, fmt.Errorf("shondan.getRecordCounts ::: %w", err)
+		return 0, err
 	}
 
 	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		return 0, fmt.Errorf("shondan.getRecordCounts ::: %w", err)
+		return 0, err
 	}
 
 	if statusCode != 200 {
-		log.Warning(fmt.Sprintf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode))
+		log.Warning(fmt.Sprintf("%s - request wasn't completed successfully - status code: %d", url, statusCode))
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		return 0, fmt.Errorf("shondan.getRecordCounts ::: An error occured while unmarshing response ::: %w", err)
+		return 0, fmt.Errorf("an error occured while unmarshing response ::: %w", err)
 	}
 
 	return result.Total, nil
@@ -90,26 +88,26 @@ func (s *Shodan) search(page int) (ShodanSearchResult, error) {
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
-		return result, fmt.Errorf("shondan.searchWithPagination ::: %w", err)
+		return result, err
 	}
 
 	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		return result, fmt.Errorf("shondan.searchWithPagination ::: %w", err)
+		return result, err
 	}
 
 	if statusCode != 200 {
-		return result, fmt.Errorf("%s - Request wasn't completed successfully ::: Status Code %d", url, statusCode)
+		return result, fmt.Errorf("%s - request wasn't completed successfully - status code %d", url, statusCode)
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		return result, fmt.Errorf("shondan.searchWithPagination ::: An error occured while unmarshing response ::: %w", err)
+		return result, fmt.Errorf("an error occured while unmarshing response ::: %w", err)
 	}
 
 	err = saveSearchResult(result)
 	if err != nil {
-		return result, fmt.Errorf("shondan.searchWithPagination ::: An error occured while adding data to Elasticsearch ::: %w", err)
+		return result, fmt.Errorf("an error occured while adding data to elasticsearch ::: %w", err)
 	}
 
 	return result, nil

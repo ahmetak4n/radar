@@ -21,11 +21,7 @@ func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Req
 		req, err = http.NewRequest("POST", url, bytes.NewBuffer([]byte(payload)))
 	}
 
-	if err != nil {
-		err = fmt.Errorf("network.PrepareRequest ::: An error occured while preparing request ::: %w", err)
-	}
-
-	return req, err
+	return req, fmt.Errorf("an error occured while preparing request to %s ::: %w", url, err)
 }
 
 // Send reqeust to target
@@ -34,13 +30,13 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	response, err := client.Do(request)
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while sending request to %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("an error occured while sending request to %s - %s ::: %w", request.Host, request.URL, err)
 		return nil, 0, nil, err
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while reading response of %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("an error occured while reading response of %s - %s ::: %w", request.Host, request.URL, err)
 		return nil, 0, nil, err
 	}
 
@@ -49,7 +45,7 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	err = response.Body.Close()
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while closing response body %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("an error occured while closing response body %s - %s ::: %w", request.Host, request.URL, err)
 		return nil, 0, nil, err
 	}
 
@@ -63,11 +59,11 @@ func HostConnection(ip string, port int) (net.Conn, error) {
 	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
 
 	if err != nil {
-		err = fmt.Errorf("network.HostConnection ::: %s:%d - Host Not Accessible ::: %w", ip, port, err)
+		err = fmt.Errorf("an error occured while connecting to %s:%d ::: %w", ip, port, err)
 	}
 
 	if connection == nil {
-		err = fmt.Errorf("network.HostConnection ::: %s:%d - Connection is Null", ip, port)
+		err = fmt.Errorf("an error occured while creating connection to %s:%d", ip, port)
 	}
 
 	return connection, err

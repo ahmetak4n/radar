@@ -18,12 +18,12 @@ func NewSonarqube() *Sonarqube {
 
 	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
 
-	menu.StringVar(&sonarqube.AttackType, "attack-type", "scan", "attack type: scan | scd (source code download)")
-	menu.StringVar(&sonarqube.SearchEngine, "search-engine", "shodan", "search engine: shodan | fofa | shodan-enterprise")
-	menu.StringVar(&sonarqube.SearchEngineApiKey, "search-engine-api-key", "", "shodan api key (Required when attacktype scan)")
-	menu.IntVar(&sonarqube.Port, "port", 9000, "sonarqube port (Required when attacktype scd)")
+	menu.StringVar(&sonarqube.AttackType, "aT", "scan", "attack type: scan | scd (source code download)")
+	menu.StringVar(&sonarqube.SearchEngine, "sE", "shodan", "search engine: shodan | fofa | shodan-enterprise")
+	menu.StringVar(&sonarqube.SearchEngineApiKey, "aK", "", "search engine api key (Required when attacktype scan)")
+	menu.IntVar(&sonarqube.Port, "p", 9000, "sonarqube port (Required when attacktype scd)")
 	menu.StringVar(&sonarqube.Hostname, "host", "", "sonarqube hostname or Ip (Required when attacktype scd)")
-	menu.StringVar(&sonarqube.ProjectKey, "project-key", "", "project key that want to download source code (Required when attacktype scd)")
+	menu.StringVar(&sonarqube.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
 
 	sonarqube.Menu = menu
 
@@ -37,7 +37,7 @@ func (sonarqube Sonarqube) Scan() {
 
 	searchResult, err := sonarqube.search()
 	if err != nil {
-		log.Error(fmt.Sprintf("An error occured while during search on %s", sonarqube.SearchEngine), err)
+		log.Error(fmt.Sprintf("an error occured while during search on %s", sonarqube.SearchEngine), err)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (sonarqube Sonarqube) Scan() {
 		connection, err := network.HostConnection(result.Ip, result.Port)
 
 		if err != nil {
-			log.Error("Sonarqube.Scan ::: ", err)
+			log.Error("", err)
 			break
 		}
 
@@ -68,13 +68,11 @@ func (sonarqube Sonarqube) search() (search.ShodanSearchResult, error) {
 	shodan := search.Shodan{
 		ApiKey:  sonarqube.SearchEngineApiKey,
 		Keyword: "sonarqube",
+		License: "free",
 	}
 
-	switch sonarqube.SearchEngine {
-	case "shodan-enterprise":
+	if sonarqube.SearchEngine == "shodan-enterprise" {
 		shodan.License = "enterprise"
-	default:
-		shodan.License = "free"
 	}
 
 	searchResult, err = shodan.Search()

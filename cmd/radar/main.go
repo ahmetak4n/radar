@@ -19,17 +19,17 @@ ______  ___ ______  ___  ______          ______
 var menuString = `
 Radar has two mod: sonarqube|gophish
 sonarqube
-	-attack-type: <scan|scd> (Default: scan)
-	-search-engine: <shodan|shodan-enterprise|fofa> (Default: shodan)
-	-search-engine-api-key: <shodan-api-key> (Required)
+	-aT: <scan|scd> (Default: scan)
+	-sE: <shodan|shodan-enterprise|fofa> (Default: shodan)
+	-aK: <shodan-api-key> (Required)
 
 Required when attack-type: scd
-	-port: <sonarqube-port> (Default: 9000)
+	-p: <sonarqube-port> (Default: 9000)
 	-host: <sonarqube-host> 
-	-project-key: <sonarqube-project-key>
+	-pK: <sonarqube-project-key>
 gophish
-	-search-engine: <shodan|fofa|shodan-enterprise> (Default: shodan)
-	-search-engine-api-key: <shodan-api-key> (Required)
+	-sE: <shodan|fofa|shodan-enterprise> (Default: shodan)
+	-aK: <shodan-api-key> (Required)
 `
 
 func menu() {
