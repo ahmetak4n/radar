@@ -1,5 +1,5 @@
 package log
 
 var (
-  VERBOSE = true
+	VERBOSE = true
 )
