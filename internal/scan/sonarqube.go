@@ -24,6 +24,7 @@ func NewSonarqube() *Sonarqube {
 	menu.IntVar(&sonarqube.Port, "p", 9000, "sonarqube port (Required when attacktype scd)")
 	menu.StringVar(&sonarqube.Hostname, "host", "", "sonarqube hostname or Ip (Required when attacktype scd)")
 	menu.StringVar(&sonarqube.ProjectKey, "pK", "", "project key that want to download source code (Required when attacktype scd)")
+	menu.BoolVar(&log.VERBOSE, "v", false, "verbose mode")
 
 	sonarqube.Menu = menu
 
@@ -33,7 +34,7 @@ func NewSonarqube() *Sonarqube {
 // Detect misconfigured sonarqubes and show details
 func (sonarqube Sonarqube) Scan() {
 	var wg sync.WaitGroup
-	var searchResult search.ShodanSearchResult
+	var searchResult search.SearchResult
 
 	searchResult, err := sonarqube.search()
 	if err != nil {
@@ -49,7 +50,7 @@ func (sonarqube Sonarqube) Scan() {
 			break
 		}
 
-		go func(r search.ShodanMatch, c net.Conn) {
+		go func(r search.Match, c net.Conn) {
 			defer c.Close()
 			wg.Add(2)
 			//checkSonarQubeDetail(r, &wg)
@@ -61,21 +62,26 @@ func (sonarqube Sonarqube) Scan() {
 }
 
 // Search sonarqube instance on search engines
-func (sonarqube Sonarqube) search() (search.ShodanSearchResult, error) {
+func (sonarqube Sonarqube) search() (search.SearchResult, error) {
 	var err error
-	var searchResult search.ShodanSearchResult
+	var searchResult search.SearchResult
 
-	shodan := search.Shodan{
-		ApiKey:  sonarqube.SearchEngineApiKey,
-		Keyword: "sonarqube",
-		License: "free",
+	switch sonarqube.SearchEngine {
+	case "shodan":
+		shodan := search.Shodan{
+			ApiKey:  sonarqube.SearchEngineApiKey,
+			Keyword: "sonarqube",
+			License: "free",
+		}
+		searchResult, err = shodan.Search()
+	case "shodan-enterprise":
+		shodan := search.Shodan{
+			ApiKey:  sonarqube.SearchEngineApiKey,
+			Keyword: "sonarqube",
+			License: "enterprise",
+		}
+		searchResult, err = shodan.EnterpriseSearch()
 	}
-
-	if sonarqube.SearchEngine == "shodan-enterprise" {
-		shodan.License = "enterprise"
-	}
-
-	searchResult, err = shodan.Search()
 
 	return searchResult, err
 }

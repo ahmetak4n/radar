@@ -21,7 +21,11 @@ func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Req
 		req, err = http.NewRequest("POST", url, bytes.NewBuffer([]byte(payload)))
 	}
 
-	return req, fmt.Errorf("an error occured while preparing request to %s ::: %w", url, err)
+	if err != nil {
+		err = fmt.Errorf("an error occured while preparing request to %s ::: %w", url, err)
+	}
+
+	return req, err
 }
 
 // Send reqeust to target

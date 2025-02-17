@@ -11,42 +11,48 @@ import (
 	"radar/pkg/elasticsearch"
 )
 
+// Search user supplied keyword on Shodan with free account
+// Shodan return maximum 100 record per page if search result has more than 100 record
+func (s *Shodan) Search() (SearchResult, error) {
+	result, err := s.search(1)
+	if err != nil {
+		return SearchResult{}, err
+	}
+
+	return result.ToSearchResult(), nil
+}
+
 // Search user supplied keyword on Shodan with paid account
 // Shodan return maximum 100 record per page if search result has more than 100 record
 // Then the function will visit every page one by one
 // Error Group Wait used instead of Wait Group for handling request in goroutine
-func (s *Shodan) Search() (ShodanSearchResult, error) {
+func (s *Shodan) EnterpriseSearch() (SearchResult, error) {
 	var err error
 	var errorGroup errgroup.Group
 
 	result := ShodanSearchResult{}
 
-	if s.License == "free" {
-		result, err = s.search(1)
-		if err != nil {
-			return result, err
-		}
-	} else if s.License == "enterprise" {
-		recordCounts, err := s.getRecordCounts()
-		if err != nil {
-			return result, err
-		}
-		totalPage := recordCounts / 100
-
-		for i := 1; i <= totalPage; i++ {
-			errorGroup.Go(func() error {
-				tmpResult, err := s.search(i)
-				result.Matches = append(result.Matches, tmpResult.Matches...)
-				return err
-			})
-		}
-		err = errorGroup.Wait()
-		if err != nil {
-			return result, err
-		}
+	recordCounts, err := s.getRecordCounts()
+	if err != nil {
+		return result.ToSearchResult(), err
 	}
 
-	return result, nil
+	totalPage := recordCounts / 100
+
+	for i := 1; i <= totalPage; i++ {
+		errorGroup.Go(func() error {
+			tmpResult, err := s.search(i)
+			result.Matches = append(result.Matches, tmpResult.Matches...)
+			return err
+		})
+	}
+
+	err = errorGroup.Wait()
+	if err != nil {
+		return result.ToSearchResult(), err
+	}
+
+	return result.ToSearchResult(), nil
 }
 
 // Get record counts that searched by keyword on Shodan

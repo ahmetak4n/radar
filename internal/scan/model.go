@@ -4,9 +4,6 @@ import (
 	"flag"
 )
 
-/***************************
-***** Sonarqube Models *****
-***************************/
 type Sonarqube struct {
 	Menu *flag.FlagSet
 
