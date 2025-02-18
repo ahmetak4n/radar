@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 
@@ -53,7 +54,7 @@ func (sonarqube Sonarqube) Scan() {
 		go func(r search.Match, c net.Conn) {
 			defer c.Close()
 			wg.Add(2)
-			//checkSonarQubeDetail(r, &wg)
+			checkSonarQubeDetail(r, &wg)
 			//checkDefaultCredential(r, &wg)
 		}(result, connection)
 	}
@@ -84,6 +85,69 @@ func (sonarqube Sonarqube) search() (search.SearchResult, error) {
 	}
 
 	return searchResult, err
+}
+
+// Get details on detected SonarQube
+// Like issue, vulnerability, code smell counts, etc.
+func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_USER_CURRENT), "")
+	if err != nil {
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
+		return
+	}
+
+	_, statusCode, _, err := network.SendRequest(req)
+	if err != nil {
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
+		return
+	}
+
+	if statusCode == 401 || statusCode == 403 {
+		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", searchResult.Ip, searchResult.Port))
+		return
+	} else if statusCode != 200 {
+		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port))
+		return
+	}
+
+	projectCount := getProjectCount(searchResult)
+
+	if projectCount > 0 {
+		codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
+		log.Success(fmt.Sprintf(
+			"SonarQube Projects Accessible! - %s:%d\n[*******] Project Counts: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
+			searchResult.Ip, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot))
+	} else {
+		log.Success(fmt.Sprintf("SonarQube Projects Accessible But Empty - %s:%d", searchResult.Ip, searchResult.Port))
+	}
+}
+
+func getProjectCount(searchResult search.Match) (int, error) {
+	var result search.SearchResult
+
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_COMPONENTS_SEARCH_PROJECTS), "")
+	if err != nil {
+		return 0, err
+	}
+
+	body, statusCode, _, err := network.SendRequest(req)
+	if err != nil {
+		return 0, err
+	}
+
+	if statusCode != 200 {
+		log.Error(fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
+		return 0, err
+	}
+
+	err = json.Unmarshal([]byte(body), &result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.Paging.Total, err
 }
 
 /*func (sonarqube Sonarqube) Scd() {
@@ -154,43 +218,6 @@ func createSourceCodeFileViaSonarQube(hostname string, port int, projectKey stri
 	}
 }
 
-// Get details on detected SonarQube
-// Like issue, vulnerability, code smell counts, etc.
-func checkSonarQubeDetail(searchResult shodan.Match, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_USER_CURRENT), "")
-	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return
-	}
-
-	_, statusCode, _, err := network.SendRequest(req)
-	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return
-	}
-
-	if statusCode == 401 || statusCode == 403 {
-		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", searchResult.Ip, searchResult.Port))
-		return
-	} else if statusCode != 200 {
-		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port))
-		return
-	}
-
-	projectCount := getProjectCount(searchResult)
-
-	if projectCount > 0 {
-		codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
-		log.Success(fmt.Sprintf(
-			"SonarQube Projects Accessible! - %s:%d\n[*******] Project Counts: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
-			searchResult.Ip, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot))
-	} else {
-		log.Success(fmt.Sprintf("SonarQube Projects Accessible But Empty - %s:%d", searchResult.Ip, searchResult.Port))
-	}
-}
-
 func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -213,35 +240,6 @@ func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 	} else {
 		log.Fail(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip, searchResult.Port))
 	}
-}
-
-func getProjectCount(searchResult shodan.Match) int {
-	result := SearchProject{}
-
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(BASE_URL, searchResult.Ip, searchResult.Port, API_COMPONENTS_SEARCH_PROJECTS), "")
-	if err != nil {
-		log.Error("sonarqube.getProjectCount ::: ", err)
-		return 0
-	}
-
-	body, statusCode, _, err := network.SendRequest(req)
-	if err != nil {
-		log.Error("sonarqube.getProjectCount ::: ", err)
-		return 0
-	}
-
-	if statusCode != 200 {
-		log.Error(fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
-		return 0
-	}
-
-	err = json.Unmarshal([]byte(body), &result)
-	if err != nil {
-		log.Error("sonarqube.getProjectCount ::: An error occured when deserialize object", err)
-		return 0
-	}
-
-	return result.Paging.Total
 }
 
 func getProjectIssuesCount(searchResult search.Match) (int, int, int, int) {
