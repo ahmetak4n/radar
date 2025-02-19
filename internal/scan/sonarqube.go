@@ -112,7 +112,11 @@ func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 		return
 	}
 
-	projectCount := getProjectCount(searchResult)
+	projectCount, err := getProjectCount(searchResult)
+	if err != nil {
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
+		return
+	}
 
 	if projectCount > 0 {
 		codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
@@ -125,7 +129,7 @@ func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 }
 
 func getProjectCount(searchResult search.Match) (int, error) {
-	var result search.SearchResult
+	var result SonarqubeSearchProject
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_COMPONENTS_SEARCH_PROJECTS), "")
 	if err != nil {
