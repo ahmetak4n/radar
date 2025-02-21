@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 
-	"net"
 	"sync"
 
 	"radar/internal/log"
@@ -47,18 +46,18 @@ func (sonarqube Sonarqube) Scan() {
 
 	for _, result := range searchResult.Matches {
 		connection, err := network.HostConnection(result.Ip, result.Port)
-
 		if err != nil {
 			log.Error("", err)
 			break
 		}
+		defer connection.Close()
 
-		go func(r search.Match, c net.Conn) {
-			defer c.Close()
-			wg.Add(2)
-			checkSonarQubeDetail(r, &wg)
-			//checkDefaultCredential(r, &wg)
-		}(result, connection)
+		wg.Add(2)
+
+		go func(r search.Match, subwg *sync.WaitGroup) {
+			checkSonarQubeDetail(r, subwg)
+			//checkDefaultCredential(r, subwg)
+		}(result, &wg)
 	}
 
 	wg.Wait()
@@ -95,6 +94,7 @@ func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var err error
+
 	sonarQubeDetail := SonarQubeDetail{
 		Ip:   searchResult.Ip,
 		Port: searchResult.Port,
@@ -102,6 +102,7 @@ func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 
 	sonarQubeDetail.Version, err = getSonarQubeVersion(sonarQubeDetail.Ip, sonarQubeDetail.Port)
 	if err != nil {
+		log.Error("an error occured while getting sonarqube version", err)
 		return
 	}
 
@@ -112,6 +113,7 @@ func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 
 	sonarQubeDetail.ProjectCount, err = getSonarQubeProjectCount(sonarQubeDetail.Ip, sonarQubeDetail.Port)
 	if err != nil {
+		log.Error("an error occured while getting sonarqube project count", err)
 		return
 	}
 
@@ -135,18 +137,16 @@ func isSonarQubeAccessible(ip string, port int) (bool, int, error) {
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_USER_CURRENT), "")
 	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return false, 0, err
+		return false, 0, fmt.Errorf("sonarqube.isSonarQubeAccessible ::: %w", err)
 	}
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return false, 0, err
+		return false, 0, fmt.Errorf("sonarqube.isSonarQubeAccessible ::: %w", err)
 	}
 
 	if statusCode == 401 || statusCode == 403 {
-		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", ip, port))
+		log.Fail(fmt.Sprintf("SonarQube Projects Not Public - %s:%d", ip, port))
 		return false, statusCode, err
 	} else if statusCode != 200 {
 		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, ip, port))
@@ -162,16 +162,14 @@ func getSonarQubeVersion(ip string, port int) (string, error) {
 
 	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_SERVER_VERSION), "")
 	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return "", err
+		return "", fmt.Errorf("sonarqube.getSonarQubeVersion ::: %w", err)
 	}
 
 	response, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return "", err
+		return "", fmt.Errorf("sonarqube.getSonarQubeVersion ::: %w", err)
 	} else if statusCode != 200 {
-		log.Error(fmt.Sprintf("sonarqube.getSonarQubeVersion ::: SonarQube Return %d Status Code - %s:%d", statusCode, ip, port), nil)
+		log.Warning(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, ip, port))
 		return "", err
 	}
 
