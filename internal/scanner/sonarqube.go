@@ -1,4 +1,4 @@
-package scan
+package scanner
 
 import (
 	"encoding/json"
@@ -11,6 +11,8 @@ import (
 	"radar/internal/log"
 	"radar/internal/network"
 	"radar/internal/search"
+
+	"radar/pkg/elasticsearch"
 )
 
 // Parse user supplied parameter and create a sonarqube scanner
@@ -92,46 +94,95 @@ func (sonarqube Sonarqube) search() (search.SearchResult, error) {
 func checkSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_USER_CURRENT), "")
+	var err error
+	sonarQubeDetail := SonarQubeDetail{
+		Ip:   searchResult.Ip,
+		Port: searchResult.Port,
+	}
+
+	sonarQubeDetail.Version, err = getSonarQubeVersion(sonarQubeDetail.Ip, sonarQubeDetail.Port)
+	if err != nil {
+		return
+	}
+
+	sonarQubeDetail.Accessible, sonarQubeDetail.StatusCode, err = isSonarQubeAccessible(sonarQubeDetail.Ip, sonarQubeDetail.Port)
+	if err != nil && sonarQubeDetail.StatusCode != 200 {
+		return
+	}
+
+	sonarQubeDetail.ProjectCount, err = getSonarQubeProjectCount(sonarQubeDetail.Ip, sonarQubeDetail.Port)
+	if err != nil {
+		return
+	}
+
+	if sonarQubeDetail.ProjectCount > 0 {
+		sonarQubeDetail.CodeSmellCount, sonarQubeDetail.VulnerabilityCount, sonarQubeDetail.BugCount, sonarQubeDetail.SecurityHotspotCount = getSonarQubeIssuesCount(sonarQubeDetail.Ip, sonarQubeDetail.Port)
+		log.Success(fmt.Sprintf(
+			"SonarQube Projects Accessible! - %s:%d\n[*******] Project Counts: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
+			sonarQubeDetail.Ip, sonarQubeDetail.Port, sonarQubeDetail.ProjectCount, sonarQubeDetail.CodeSmellCount, sonarQubeDetail.VulnerabilityCount, sonarQubeDetail.BugCount, sonarQubeDetail.SecurityHotspotCount))
+	} else {
+		log.Success(fmt.Sprintf("SonarQube Projects Accessible But Empty - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port))
+	}
+
+	fmt.Println(sonarQubeDetail)
+
+	saveToElasticsearch(sonarQubeDetail)
+}
+
+// Check the SonarQube instance projects are accessible
+func isSonarQubeAccessible(ip string, port int) (bool, int, error) {
+	var err error
+
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_USER_CURRENT), "")
 	if err != nil {
 		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return
+		return false, 0, err
 	}
 
 	_, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
 		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return
+		return false, 0, err
 	}
 
 	if statusCode == 401 || statusCode == 403 {
-		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", searchResult.Ip, searchResult.Port))
-		return
+		log.Fail(fmt.Sprintf("SonarQube Projects Not Accessible - %s:%d", ip, port))
+		return false, statusCode, err
 	} else if statusCode != 200 {
-		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port))
-		return
+		log.Fail(fmt.Sprintf("SonarQube Return %d Status Code - %s:%d", statusCode, ip, port))
+		return false, statusCode, err
 	}
 
-	projectCount, err := getProjectCount(searchResult)
-	if err != nil {
-		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
-		return
-	}
-
-	if projectCount > 0 {
-		codeSmell, vulnerability, bug, securityHotspot := getProjectIssuesCount(searchResult)
-		log.Success(fmt.Sprintf(
-			"SonarQube Projects Accessible! - %s:%d\n[*******] Project Counts: %d, Code Smell: %d, Vulnerability: %d, Bug: %d, Security Hotspot: %d",
-			searchResult.Ip, searchResult.Port, projectCount, codeSmell, vulnerability, bug, securityHotspot))
-	} else {
-		log.Success(fmt.Sprintf("SonarQube Projects Accessible But Empty - %s:%d", searchResult.Ip, searchResult.Port))
-	}
+	return true, statusCode, err
 }
 
-func getProjectCount(searchResult search.Match) (int, error) {
+// Get the version of the SonarQube instance
+func getSonarQubeVersion(ip string, port int) (string, error) {
+	var err error
+
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_SERVER_VERSION), "")
+	if err != nil {
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
+		return "", err
+	}
+
+	response, statusCode, _, err := network.SendRequest(req)
+	if err != nil {
+		log.Error("sonarqube.checkSonarQubeDetail ::: ", err)
+		return "", err
+	} else if statusCode != 200 {
+		log.Error(fmt.Sprintf("sonarqube.getSonarQubeVersion ::: SonarQube Return %d Status Code - %s:%d", statusCode, ip, port), nil)
+		return "", err
+	}
+
+	return string(response), err
+}
+
+// Get the count of projects on the SonarQube instance
+func getSonarQubeProjectCount(ip string, port int) (int, error) {
 	var result SonarqubeSearchProject
 
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_COMPONENTS_SEARCH_PROJECTS), "")
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_COMPONENTS_SEARCH_PROJECTS), "")
 	if err != nil {
 		return 0, err
 	}
@@ -142,7 +193,7 @@ func getProjectCount(searchResult search.Match) (int, error) {
 	}
 
 	if statusCode != 200 {
-		log.Error(fmt.Sprintf("sonarqube.getProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
+		log.Error(fmt.Sprintf("sonarqube.getSonarQubeProjectCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, ip, port), nil)
 		return 0, err
 	}
 
@@ -152,6 +203,60 @@ func getProjectCount(searchResult search.Match) (int, error) {
 	}
 
 	return result.Paging.Total, err
+}
+
+// Get the count of issues on the SonarQube instance
+func getSonarQubeIssuesCount(ip string, port int) (int, int, int, int) {
+	result := SonarQubeIssues{}
+	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
+
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, ip, port, SONARQUBE_API_ISSUE_SEARCH), "")
+	if err != nil {
+		log.Error("sonarqube.getSonarQubeIssuesCount ::: ", err)
+		return 0, 0, 0, 0
+	}
+
+	body, statusCode, _, err := network.SendRequest(req)
+	if err != nil {
+		log.Error("sonarqube.getSonarQubeIssuesCount ::: ", err)
+		return 0, 0, 0, 0
+	}
+
+	if statusCode != 200 {
+		log.Error(fmt.Sprintf("sonarqube.getSonarQubeIssuesCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, ip, port), nil)
+		return 0, 0, 0, 0
+	}
+
+	err = json.Unmarshal([]byte(body), &result)
+	if err != nil {
+		log.Error("sonarqube.getSonarQubeIssuesCount ::: An error occured when deserialize object", err)
+		return 0, 0, 0, 0
+	}
+
+	if result.Facets != nil {
+		for _, data := range result.Facets[0].Values {
+			switch data.Val {
+			case "CODE_SMELL":
+				codeSmell = data.Count
+			case "VULNERABILITY":
+				vulnerability = data.Count
+			case "BUG":
+				bug = data.Count
+			case "SECURITY_HOTSPOT":
+				securityHotspot = data.Count
+			}
+		}
+	}
+
+	return codeSmell, vulnerability, bug, securityHotspot
+}
+
+func saveToElasticsearch(sonarQubeDetail SonarQubeDetail) {
+	id := fmt.Sprintf("%s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port)
+	err := elasticsearch.AddData("sonarqube-db", id, sonarQubeDetail)
+	if err != nil {
+		log.Error("An error occured when adding data to elasticsearch :::", err)
+	}
 }
 
 /*func (sonarqube Sonarqube) Scd() {
@@ -244,51 +349,6 @@ func checkDefaultCredential(searchResult shodan.Match, wg *sync.WaitGroup) {
 	} else {
 		log.Fail(fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip, searchResult.Port))
 	}
-}
-
-func getProjectIssuesCount(searchResult search.Match) (int, int, int, int) {
-	result := Issues{}
-	codeSmell, vulnerability, bug, securityHotspot := 0, 0, 0, 0
-
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf(SONARQUBE_BASE_URL, searchResult.Ip, searchResult.Port, SONARQUBE_API_ISSUE_SEARCH), "")
-	if err != nil {
-		log.Error("sonarqube.getProjectIssuesCount ::: ", err)
-		return 0, 0, 0, 0
-	}
-
-	body, statusCode, _, err := network.SendRequest(req)
-	if err != nil {
-		log.Error("sonarqube.getProjectIssuesCount ::: ", err)
-		return 0, 0, 0, 0
-	}
-
-	if statusCode != 200 {
-		log.Error(fmt.Sprintf("sonarqube.getProjectIssuesCount ::: SonarQube Return %d Status Code - %s:%d", statusCode, searchResult.Ip, searchResult.Port), nil)
-		return 0, 0, 0, 0
-	}
-
-	err = json.Unmarshal([]byte(body), &result)
-	if err != nil {
-		log.Error("sonarqube.getProjectIssuesCount ::: An error occured when deserialize object", err)
-		return 0, 0, 0, 0
-	}
-
-	if result.Facets != nil {
-		for _, data := range result.Facets[0].Values {
-			switch data.Val {
-			case "CODE_SMELL":
-				codeSmell = data.Count
-			case "VULNERABILITY":
-				vulnerability = data.Count
-			case "BUG":
-				bug = data.Count
-			case "SECURITY_HOTSPOT":
-				securityHotspot = data.Count
-			}
-		}
-	}
-
-	return codeSmell, vulnerability, bug, securityHotspot
 }
 
 func getSonarQubeProjectFiles(hostname string, port int, projectKey string, page int, count int) []Component {

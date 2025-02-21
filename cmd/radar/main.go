@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"radar/internal/log"
-	"radar/internal/scan"
+	"radar/internal/scanner"
 )
 
 var banner = `
@@ -53,7 +53,7 @@ func menu() {
 }
 
 func sonarqubeMenu(args []string) {
-	sonarqube := scan.NewSonarqube()
+	sonarqube := scanner.NewSonarqube()
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {

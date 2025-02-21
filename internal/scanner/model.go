@@ -1,4 +1,4 @@
-package scan
+package scanner
 
 import (
 	"flag"
@@ -58,4 +58,17 @@ type SonarQubeLine struct {
 type SonarQubeSource struct {
 	Line int    `json:"line"`
 	Code string `json:"code"`
+}
+
+type SonarQubeDetail struct {
+	Ip                   string
+	Port                 int
+	Version              string
+	StatusCode           int
+	Accessible           bool
+	ProjectCount         int
+	CodeSmellCount       int
+	VulnerabilityCount   int
+	BugCount             int
+	SecurityHotspotCount int
 }

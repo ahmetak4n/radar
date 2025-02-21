@@ -1,4 +1,4 @@
-package scan
+package scanner
 
 const (
 	//TODO - SSL NOT SUPPORTED YET
@@ -8,6 +8,7 @@ const (
 	SONARQUBE_API_USER_CURRENT               = "/api/users/current"
 	SONARQUBE_API_COMPONENTS_SEARCH_PROJECTS = "/api/components/search_projects"
 	SONARQUBE_API_ISSUE_SEARCH               = "/api/issues/search?resolved=false&facets=types&ps=1&additionalFields=_all"
+	SONARQUBE_API_SERVER_VERSION             = "/api/server/version" //Since SonarQube 2.10
 
 	SONARQUBE_PROJECT_COMPONENT_PATH  = "/api/measures/component_tree?"
 	SONARQUBE_PROJECT_COMPONENT_PARAM = "metricKeys=ncloc&component=%s&p=%d&ps=%d"
