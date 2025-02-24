@@ -2,9 +2,8 @@ package main
 
 import (
 	"os"
-	"radar/internal/gophish"
 	"radar/internal/log"
-	"radar/internal/sonarqube"
+	"radar/internal/scanner"
 )
 
 var banner = `
@@ -18,19 +17,32 @@ ______  ___ ______  ___  ______          ______
 `
 
 var menuString = `
-Radar has two mod: sonarqube|gophish
+Radar has two scanners: sonarqube|gophish
 sonarqube
-	-aT: scan | scd ("scan" used for detect misconfigured sonarqube server (default). "scd" used for download source code from any sonarqube service)
-	-aK: Shodan API Key (Required when attacktype is "scan")
+	--m: <search|scan|scd> (default: search)
+	
+	mode: search
+		--search-engine: <shodan|shodan-enterprise|fofa> (default: shodan)
+		--api-key: <shodan-api-key> (required)
+		--elastic-url: <elastic-url> (required)
+
+	mode: scan
+		--elastic-url: <elastic-url> (required)
+
+	mode: scd
+		--p: <sonarqube-port> (default: 9000)
+		--host: <sonarqube-host> 
+		--pK: <sonarqube-project-key>
 gophish
-	-aK: Shodan API Key
+	--sE: <shodan|fofa|shodan-enterprise> (default: shodan)
+	--aK: <shodan-api-key> (required)
 `
 
 func menu() {
 	log.Banner(banner)
 
 	if len(os.Args) < 2 {
-		log.Warning("Invalid radar mod. Use -h for help")
+		log.Warning("Invalid radar scanner. Use '-h' or '--help' for help")
 		return
 	}
 
@@ -39,15 +51,15 @@ func menu() {
 		sonarqubeMenu(os.Args[2:])
 	case "gophish":
 		gophishMenu(os.Args[2:])
-	case "-h":
+	case "-h", "--help":
 		log.Banner(menuString)
 	default:
-		log.Warning("Invalid radar mod. Use `radar -h` for help")
+		log.Warning("Invalid radar scanner. Use `radar -h` for help")
 	}
 }
 
 func sonarqubeMenu(args []string) {
-	sonarqube := sonarqube.NewScanner()
+	sonarqube := scanner.NewSonarqube()
 
 	err := sonarqube.Menu.Parse(args)
 	if err != nil {
@@ -55,18 +67,20 @@ func sonarqubeMenu(args []string) {
 		return
 	}
 
-	switch sonarqube.AttackType {
+	switch sonarqube.Mode {
+	case "search":
+		sonarqube.Search()
 	case "scan":
-		sonarqube.Scan()
+		//sonarqube.Scan()
 	case "scd":
-		sonarqube.Scd()
+		//sonarqube.Scd()
 	default:
 		log.Warning("Invalid `aT`. Use `radar sonarqube -h` for help")
 	}
 }
 
 func gophishMenu(args []string) {
-	gophish := gophish.NewGophishScanner()
+	/*gophish := gophish.NewGophishScanner()
 
 	err := gophish.Menu.Parse(args)
 	if err != nil {
@@ -74,7 +88,7 @@ func gophishMenu(args []string) {
 		return
 	}
 
-	gophish.Scan()
+	gophish.Scan()*/
 }
 
 func main() {

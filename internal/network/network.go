@@ -22,7 +22,7 @@ func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Req
 	}
 
 	if err != nil {
-		err = fmt.Errorf("network.PrepareRequest ::: An error occured while preparing request ::: %w", err)
+		err = fmt.Errorf("network.PrepareRequest ::: %w", err)
 	}
 
 	return req, err
@@ -34,13 +34,13 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	response, err := client.Do(request)
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while sending request to %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("network.SendRequest ::: client.Do ::: %w", err)
 		return nil, 0, nil, err
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while reading response of %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("network.SendRequest ::: io.ReadAll ::: %w", err)
 		return nil, 0, nil, err
 	}
 
@@ -49,7 +49,7 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	err = response.Body.Close()
 	if err != nil {
-		err = fmt.Errorf("network.SendRequest ::: An error occured while closing response body %s - %s ::: %w", request.Host, request.URL, err)
+		err = fmt.Errorf("network.SendRequest ::: response.Body.Close ::: %w", err)
 		return nil, 0, nil, err
 	}
 
@@ -61,13 +61,12 @@ func HostConnection(ip string, port int) (net.Conn, error) {
 	var err error
 
 	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
-
 	if err != nil {
-		err = fmt.Errorf("network.HostConnection ::: %s:%d - Host Not Accessible ::: %w", ip, port, err)
+		err = fmt.Errorf("network.HostConnection ::: %w", err)
 	}
 
 	if connection == nil {
-		err = fmt.Errorf("network.HostConnection ::: %s:%d - Connection is Null", ip, port)
+		err = fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
 	}
 
 	return connection, err

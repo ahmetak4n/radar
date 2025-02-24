@@ -9,21 +9,24 @@ func Banner(message string) {
 }
 
 func Success(message string) {
-	color.Green("[SUCCESS] " + message)
+	color.Green("[SUCCESS] %s", message)
 }
 
 func Warning(message string) {
-	color.Yellow("[WARNING] " + message)
+	color.Yellow("[WARNING] %s", message)
 }
 
 func Fail(message string) {
-	color.Red("[FAIL] " + message)
+	color.Red("[FAIL] %s", message)
 }
 
 func Error(message string, err error) {
-	color.Red("[ERROR] " + message, err)
+	if VERBOSE {
+		color.Red("[ERROR] %s ::: [DETAIL] %s", message, err.Error())
+	}
+	color.Red("[ERROR] %s", message)
 }
 
-func ValidationError(message string) {
-	color.Red("[VALIDATION ERROR] " + message)
+func Custom(message string, color *color.Color) {
+	color.Println(message)
 }
