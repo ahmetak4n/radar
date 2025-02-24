@@ -17,26 +17,32 @@ ______  ___ ______  ___  ______          ______
 `
 
 var menuString = `
-Radar has two mod: sonarqube|gophish
+Radar has two scanners: sonarqube|gophish
 sonarqube
-	-aT: <scan|scd> (Default: scan)
-	-sE: <shodan|shodan-enterprise|fofa> (Default: shodan)
-	-aK: <shodan-api-key> (Required)
+	--m: <search|scan|scd> (default: search)
+	
+	mode: search
+		--search-engine: <shodan|shodan-enterprise|fofa> (default: shodan)
+		--api-key: <shodan-api-key> (required)
+		--elastic-url: <elastic-url> (required)
 
-Required when attack-type: scd
-	-p: <sonarqube-port> (Default: 9000)
-	-host: <sonarqube-host> 
-	-pK: <sonarqube-project-key>
+	mode: scan
+		--elastic-url: <elastic-url> (required)
+
+	mode: scd
+		--p: <sonarqube-port> (default: 9000)
+		--host: <sonarqube-host> 
+		--pK: <sonarqube-project-key>
 gophish
-	-sE: <shodan|fofa|shodan-enterprise> (Default: shodan)
-	-aK: <shodan-api-key> (Required)
+	--sE: <shodan|fofa|shodan-enterprise> (default: shodan)
+	--aK: <shodan-api-key> (required)
 `
 
 func menu() {
 	log.Banner(banner)
 
 	if len(os.Args) < 2 {
-		log.Warning("Invalid radar mod. Use -h for help")
+		log.Warning("Invalid radar scanner. Use '-h' or '--help' for help")
 		return
 	}
 
@@ -45,10 +51,10 @@ func menu() {
 		sonarqubeMenu(os.Args[2:])
 	case "gophish":
 		gophishMenu(os.Args[2:])
-	case "-h":
+	case "-h", "--help":
 		log.Banner(menuString)
 	default:
-		log.Warning("Invalid radar mod. Use `radar -h` for help")
+		log.Warning("Invalid radar scanner. Use `radar -h` for help")
 	}
 }
 
@@ -61,9 +67,11 @@ func sonarqubeMenu(args []string) {
 		return
 	}
 
-	switch sonarqube.AttackType {
+	switch sonarqube.Mode {
+	case "search":
+		sonarqube.Search()
 	case "scan":
-		sonarqube.Scan()
+		//sonarqube.Scan()
 	case "scd":
 		//sonarqube.Scd()
 	default:

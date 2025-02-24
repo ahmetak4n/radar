@@ -7,10 +7,12 @@ import (
 type Sonarqube struct {
 	Menu *flag.FlagSet
 
-	AttackType string
+	Mode string
 
 	SearchEngine       string
 	SearchEngineApiKey string
+
+	ElasticUrl string
 
 	Port       int
 	Hostname   string
@@ -64,8 +66,9 @@ type SonarQubeDetail struct {
 	Ip                   string
 	Port                 int
 	Version              string
-	StatusCode           int
-	Accessible           bool
+	IsAccessible         bool
+	IsPublic             bool
+	IsDefaultCredential  bool
 	ProjectCount         int
 	CodeSmellCount       int
 	VulnerabilityCount   int

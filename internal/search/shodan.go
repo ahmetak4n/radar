@@ -13,46 +13,42 @@ import (
 
 // Search user supplied keyword on Shodan with free account
 // Shodan return maximum 100 record per page if search result has more than 100 record
-func (s *Shodan) Search() (SearchResult, error) {
-	result, err := s.search(1)
+func (s *Shodan) Search() {
+	err := s.search(1)
 	if err != nil {
-		return SearchResult{}, err
+		log.Error("an error occured while searching on shodan", err)
+	} else {
+		log.Success("shodan search completed successfully")
 	}
-
-	return result.ToSearchResult(), nil
 }
 
 // Search user supplied keyword on Shodan with paid account
 // Shodan return maximum 100 record per page if search result has more than 100 record
 // Then the function will visit every page one by one
 // Error Group Wait used instead of Wait Group for handling request in goroutine
-func (s *Shodan) EnterpriseSearch() (SearchResult, error) {
+func (s *Shodan) EnterpriseSearch() error {
 	var err error
 	var errorGroup errgroup.Group
 
-	result := ShodanSearchResult{}
-
 	recordCounts, err := s.getRecordCounts()
 	if err != nil {
-		return result.ToSearchResult(), err
+		return err
 	}
 
 	totalPage := recordCounts / 100
 
 	for i := 1; i <= totalPage; i++ {
 		errorGroup.Go(func() error {
-			tmpResult, err := s.search(i)
-			result.Matches = append(result.Matches, tmpResult.Matches...)
-			return err
+			return s.search(i)
 		})
 	}
 
 	err = errorGroup.Wait()
 	if err != nil {
-		return result.ToSearchResult(), err
+		return err
 	}
 
-	return result.ToSearchResult(), nil
+	return err
 }
 
 // Get record counts that searched by keyword on Shodan
@@ -87,36 +83,36 @@ func (s *Shodan) getRecordCounts() (int, error) {
 // Search keyword on Shodan with page parameter
 // The function must use with goroutine and take waiting group as an input
 // If status code different from 200, print warning log to console
-func (s *Shodan) search(page int) (ShodanSearchResult, error) {
+func (s *Shodan) search(page int) error {
 	result := ShodanSearchResult{}
 
 	url := fmt.Sprintf("%s?key=%s&query=%s&page=%d", SHODAN_HOST_SEARCH, s.ApiKey, s.Keyword, page)
 
 	req, err := network.PrepareRequest(network.GetRequest, url, "")
 	if err != nil {
-		return result, err
+		return err
 	}
 
 	body, statusCode, _, err := network.SendRequest(req)
 	if err != nil {
-		return result, err
+		return err
 	}
 
 	if statusCode != 200 {
-		return result, fmt.Errorf("%s - request wasn't completed successfully - status code %d", url, statusCode)
+		return fmt.Errorf("%s - request wasn't completed successfully - status code %d", url, statusCode)
 	}
 
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
-		return result, fmt.Errorf("an error occured while unmarshing response ::: %w", err)
+		return fmt.Errorf("an error occured while unmarshing response ::: %w", err)
 	}
 
 	err = saveSearchResult(result)
 	if err != nil {
-		return result, fmt.Errorf("an error occured while adding data to elasticsearch ::: %w", err)
+		return fmt.Errorf("an error occured while adding data to elasticsearch ::: %w", err)
 	}
 
-	return result, nil
+	return nil
 }
 
 // Write search result to Elasticsearch
