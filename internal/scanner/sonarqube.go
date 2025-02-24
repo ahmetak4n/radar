@@ -73,6 +73,7 @@ func (sonarqube Sonarqube) Scan() {
 			log.Error("", err)
 			break
 		}
+		defer connection.Close()
 
 		defer connection.Close()
 		wg.Add(1)
