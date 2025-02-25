@@ -18,7 +18,7 @@ import (
 func NewSonarqube() *Sonarqube {
 	sonarqube := &Sonarqube{}
 
-	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
+	menu := flag.NewFlagSet("search", flag.ExitOnError)
 
 	menu.StringVar(&sonarqube.Mode, "m", "search", "mode: search | scan | scd (source code download)")
 	menu.StringVar(&sonarqube.SearchEngine, "search-engine", "shodan", "search engine: shodan | fofa | shodan-enterprise")
