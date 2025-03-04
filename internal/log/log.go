@@ -21,7 +21,7 @@ func Fail(message string) {
 }
 
 func Error(message string, err error) {
-	if VERBOSE {
+	if Verbose {
 		color.Red("[ERROR] %s ::: [DETAIL] %s", message, err.Error())
 	}
 	color.Red("[ERROR] %s", message)
