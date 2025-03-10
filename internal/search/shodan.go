@@ -3,8 +3,7 @@ package search
 import (
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/sync/errgroup"
+	"sync"
 
 	"radar/internal/log"
 	"radar/internal/network"
@@ -16,9 +15,9 @@ import (
 func (s *Shodan) Search() {
 	err := s.search(1)
 	if err != nil {
-		log.Error("an error occured while searching on shodan", err)
+		log.Error("An error occured while searching on shodan", err)
 	} else {
-		log.Success("shodan search completed successfully")
+		log.Success("Shodan search completed successfully")
 	}
 }
 
@@ -26,29 +25,32 @@ func (s *Shodan) Search() {
 // Shodan return maximum 100 record per page if search result has more than 100 record
 // Then the function will visit every page one by one
 // Error Group Wait used instead of Wait Group for handling request in goroutine
-func (s *Shodan) EnterpriseSearch() error {
+func (s *Shodan) EnterpriseSearch() {
 	var err error
-	var errorGroup errgroup.Group
+	var wg sync.WaitGroup
 
 	recordCounts, err := s.getRecordCounts()
 	if err != nil {
-		return err
+		log.Error("an error occured while getting record counts", err)
+		return
 	}
 
 	totalPage := recordCounts / 100
 
+	fmt.Println(totalPage)
+
 	for i := 1; i <= totalPage; i++ {
-		errorGroup.Go(func() error {
-			return s.search(i)
-		})
+		wg.Add(1)
+		go func(i int, subwg *sync.WaitGroup) {
+			defer subwg.Done()
+			log.Warning(fmt.Sprintf("Searching on shodan page %d", i))
+			s.search(i)
+		}(i, &wg)
 	}
 
-	err = errorGroup.Wait()
-	if err != nil {
-		return err
-	}
+	wg.Wait()
 
-	return err
+	log.Success(fmt.Sprintf("shodan enterprise search completed successfully. Total record: %d - Total page: %d", recordCounts, totalPage))
 }
 
 // Get record counts that searched by keyword on Shodan

@@ -38,6 +38,8 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 		return nil, 0, nil, err
 	}
 
+	fmt.Println(response.TLS.OCSPResponse)
+
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		err = fmt.Errorf("network.SendRequest ::: io.ReadAll ::: %w", err)
