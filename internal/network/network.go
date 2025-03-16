@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -37,8 +38,6 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 		err = fmt.Errorf("network.SendRequest ::: client.Do ::: %w", err)
 		return nil, 0, nil, err
 	}
-
-	fmt.Println(response.TLS.OCSPResponse)
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -72,4 +71,24 @@ func HostConnection(ip string, port int) (net.Conn, error) {
 	}
 
 	return connection, err
+}
+
+func RequestPool(numOfWorker int, totalRequest int) chan *http.Request {
+	var wg sync.WaitGroup
+
+	wg.Add(totalRequest)
+	jobs := make(chan *http.Request, totalRequest)
+
+	for i := 0; i < numOfWorker; i++ {
+		go requestWorker(jobs, &wg)
+	}
+
+	return jobs
+}
+
+func requestWorker(jobs chan *http.Request, wg *sync.WaitGroup) {
+	for job := range jobs {
+		SendRequest(job)
+		wg.Done()
+	}
 }

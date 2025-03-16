@@ -36,16 +36,10 @@ func (s *Shodan) EnterpriseSearch() {
 	}
 
 	totalPage := recordCounts / 100
+	jobs := network.RequestPool(5, totalPage)
 
-	fmt.Println(totalPage)
-
-	for i := 1; i <= totalPage; i++ {
-		wg.Add(1)
-		go func(i int, subwg *sync.WaitGroup) {
-			defer subwg.Done()
-			log.Warning(fmt.Sprintf("Searching on shodan page %d", i))
-			s.search(i)
-		}(i, &wg)
+	for i := 0; i < totalPage; i++ {
+		jobs <- network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s?key=%s&query=%s&page=%d", SHODAN_HOST_SEARCH, s.ApiKey, s.Keyword, i), "")
 	}
 
 	wg.Wait()
@@ -101,6 +95,7 @@ func (s *Shodan) search(page int) error {
 	}
 
 	if statusCode != 200 {
+		fmt.Println(string(body))
 		return fmt.Errorf("%s - request wasn't completed successfully - status code %d", url, statusCode)
 	}
 
@@ -113,6 +108,8 @@ func (s *Shodan) search(page int) error {
 	if err != nil {
 		return fmt.Errorf("an error occured while adding data to elasticsearch ::: %w", err)
 	}
+
+	log.Success(fmt.Sprintf("shodan search completed successfully. Total record: %d - Page: %d", result.Total, page))
 
 	return nil
 }
