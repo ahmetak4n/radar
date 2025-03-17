@@ -2,7 +2,6 @@ package scanner
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 
 	"sync"
@@ -14,25 +13,16 @@ import (
 	"radar/pkg/elasticsearch"
 )
 
-// Parse user supplied parameter and create a sonarqube scanner
-func NewSonarqube() *Sonarqube {
-	sonarqube := &Sonarqube{}
-
-	menu := flag.NewFlagSet("sonarqube", flag.ExitOnError)
-
-	menu.StringVar(&sonarqube.Mode, "m", "search", "mode: search | scan | scd (source code download)")
-	menu.StringVar(&sonarqube.SearchEngine, "search-engine", "shodan", "search engine: shodan | fofa | shodan-enterprise")
-	menu.StringVar(&sonarqube.SearchEngineApiKey, "api-key", "", "search engine api key")
-	menu.StringVar(&sonarqube.ElasticUrl, "elastic-url", "", "elastic url")
-
-	menu.IntVar(&sonarqube.Port, "p", 9000, "sonarqube port")
-	menu.StringVar(&sonarqube.Hostname, "host", "", "sonarqube hostname or Ip")
-	menu.StringVar(&sonarqube.ProjectKey, "project-key", "", "project key that want to download source code")
-	menu.BoolVar(&log.VERBOSE, "v", false, "verbose mode")
-
-	sonarqube.Menu = menu
-
-	return sonarqube
+// Initialize sonarqube scanner
+func (sonarqube Sonarqube) Init() {
+	switch sonarqube.Mode {
+	case "search":
+		sonarqube.Search()
+	case "scan":
+		//sonarqube.Scan()
+	case "scd":
+		//sonarqube.Scd()
+	}
 }
 
 // Search sonarqube instance on search engines
@@ -74,8 +64,6 @@ func (sonarqube Sonarqube) Scan() {
 			break
 		}
 		defer connection.Close()
-
-		defer connection.Close()
 		wg.Add(1)
 
 		go func(r search.Match, subwg *sync.WaitGroup) {
@@ -85,7 +73,7 @@ func (sonarqube Sonarqube) Scan() {
 	}
 
 	wg.Wait()
-} */
+}*/
 
 // Get details on detected SonarQube
 // Like issue, vulnerability, code smell counts, etc.

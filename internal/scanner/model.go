@@ -5,7 +5,8 @@ import (
 )
 
 type Sonarqube struct {
-	Menu *flag.FlagSet
+	Menu           *flag.FlagSet
+	ModeSearchMenu *flag.FlagSet
 
 	Mode string
 

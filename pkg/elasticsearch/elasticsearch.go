@@ -8,14 +8,17 @@ import (
 )
 
 // Create new Elasticsearch client
-// TODO - Elasticsearch endpoint will be parametric
-// TODO - XPackSecurity support will be added
 func newTypedClient() (*elasticsearch.TypedClient, error) {
 
 	cfg := elasticsearch.Config{
 		Addresses: []string{
-			"http://localhost:9200",
+			Url,
 		},
+	}
+
+	if Auth {
+		cfg.Username = Username
+		cfg.Password = Password
 	}
 
 	es, err := elasticsearch.NewTypedClient(cfg)

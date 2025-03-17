@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+// Check target host is accessible or not
+func HostConnection(ip string, port int) (net.Conn, error) {
+	var err error
+
+	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
+	if err != nil {
+		err = fmt.Errorf("network.HostConnection ::: %w", err)
+	}
+
+	if connection == nil {
+		err = fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
+	}
+
+	return connection, err
+}
+
 // Prepare request with user supplied variables
 func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Request, error) {
 	var err error
@@ -29,6 +45,7 @@ func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Req
 }
 
 // Send reqeust to target
+// Return response body, status code and HTTP response headers
 func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 	var err error
 
@@ -54,20 +71,4 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 	}
 
 	return body, statusCode, headers, err
-}
-
-// Check target host is accessible or not
-func HostConnection(ip string, port int) (net.Conn, error) {
-	var err error
-
-	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
-	if err != nil {
-		err = fmt.Errorf("network.HostConnection ::: %w", err)
-	}
-
-	if connection == nil {
-		err = fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
-	}
-
-	return connection, err
 }
