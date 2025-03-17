@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"radar/internal/log"
 	"radar/internal/network"
@@ -36,15 +37,25 @@ func (s *Shodan) EnterpriseSearch() {
 	}
 
 	totalPage := recordCounts / 100
-	jobs := network.RequestPool(5, totalPage)
+	wg.Add(totalPage)
 
-	for i := 0; i < totalPage; i++ {
-		jobs <- network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s?key=%s&query=%s&page=%d", SHODAN_HOST_SEARCH, s.ApiKey, s.Keyword, i), "")
+	for i := 1; i <= totalPage; i++ {
+		go func(i int, subwg *sync.WaitGroup) {
+			defer subwg.Done()
+			err := s.search(i)
+			if err != nil {
+				log.Error(fmt.Sprintf("An error occured while shodan enterprise search - Page %d", i), err)
+			}
+		}(i, &wg)
+
+		if i%5 == 0 {
+			time.Sleep(5 * time.Second)
+		}
 	}
 
 	wg.Wait()
 
-	log.Success(fmt.Sprintf("shodan enterprise search completed successfully. Total record: %d - Total page: %d", recordCounts, totalPage))
+	log.Success(fmt.Sprintf("Shodan enterprise search completed successfully. Total record: %d - Total page: %d", recordCounts, totalPage))
 }
 
 // Get record counts that searched by keyword on Shodan
@@ -95,7 +106,6 @@ func (s *Shodan) search(page int) error {
 	}
 
 	if statusCode != 200 {
-		fmt.Println(string(body))
 		return fmt.Errorf("%s - request wasn't completed successfully - status code %d", url, statusCode)
 	}
 
