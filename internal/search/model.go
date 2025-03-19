@@ -1,7 +1,5 @@
 package search
 
-import "radar/internal/log"
-
 type SearchResult struct {
 	Matches []Match
 	Total   int
@@ -32,21 +30,4 @@ type Fofa struct {
 	ApiKey  string
 	License string
 	Keyword string
-}
-
-func (shodanSearchResult ShodanSearchResult) ToSearchResult() SearchResult {
-	var searchResult SearchResult
-
-	if shodanSearchResult.Total == 0 {
-		log.Warning("The search result is empty on shodan")
-		return searchResult
-	}
-
-	for _, match := range shodanSearchResult.Matches {
-		searchResult.Matches = append(searchResult.Matches, Match(match))
-	}
-
-	searchResult.Total = shodanSearchResult.Total
-
-	return searchResult
 }

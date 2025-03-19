@@ -19,7 +19,7 @@ func (sonarqube Sonarqube) Init() {
 	case "search":
 		sonarqube.Search()
 	case "scan":
-		//sonarqube.Scan()
+		sonarqube.Scan()
 	case "scd":
 		//sonarqube.Scd()
 	}
@@ -45,42 +45,41 @@ func (sonarqube Sonarqube) Search() {
 	}
 }
 
-/*
 // Detect misconfigured sonarqubes and show details
 func (sonarqube Sonarqube) Scan() {
 	var wg sync.WaitGroup
-	var searchResult search.SearchResult
 
-	searchResult, err := sonarqube.Search()
+	results, err := GetAllSonarQubeProjects()
 	if err != nil {
-		log.Error(fmt.Sprintf("an error occured while during search on %s", sonarqube.SearchEngine), err)
+		log.Error("Error getting data from elasticsearch", err)
 		return
 	}
 
-	for _, result := range searchResult.Matches {
+	for _, result := range results {
 		connection, err := network.HostConnection(result.Ip, result.Port)
 		if err != nil {
 			log.Error("", err)
-			break
+			continue
 		}
 		defer connection.Close()
 		wg.Add(1)
 
-		go func(r search.Match, subwg *sync.WaitGroup) {
-			getSonarQubeDetail(r, subwg)
+		go func(ip string, port int, subwg *sync.WaitGroup) {
+			getSonarQubeDetail(ip, port, subwg)
 			//checkDefaultCredential(r, &wg)
-		}(result, &wg)
+		}(result.Ip, result.Port, &wg)
 	}
 
 	wg.Wait()
-}*/
+
+}
 
 // Get details on detected SonarQube
 // Like issue, vulnerability, code smell counts, etc.
-func getSonarQubeDetail(searchResult search.Match, wg *sync.WaitGroup) {
+func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 	sonarQubeDetail := &SonarQubeDetail{
-		Ip:           searchResult.Ip,
-		Port:         searchResult.Port,
+		Ip:           ip,
+		Port:         port,
 		IsAccessible: false,
 		IsPublic:     false,
 	}
@@ -302,6 +301,25 @@ func (sonarQubeDetail *SonarQubeDetail) saveToElasticsearch() {
 	if err != nil {
 		log.Error("An error occured when adding data to elasticsearch :::", err)
 	}
+}
+
+func GetAllSonarQubeProjects() ([]elasticsearch.ShodanSonarQubeSearch, error) {
+	var err error
+	var results []elasticsearch.ShodanSonarQubeSearch
+
+	totalPages := 1
+
+	for i := 1; i <= totalPages; i++ {
+		paginationResponse, err := elasticsearch.GetAll[elasticsearch.ShodanSonarQubeSearch]("shodan-sonarqube-search", i, 100)
+		if err != nil {
+			return nil, fmt.Errorf("Elasticsearch.GetData ::: %w", err)
+		}
+
+		results = append(results, paginationResponse.Items...)
+		totalPages = paginationResponse.TotalPages
+	}
+
+	return results, err
 }
 
 /*func (sonarqube Sonarqube) Scd() {

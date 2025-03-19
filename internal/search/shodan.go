@@ -48,7 +48,7 @@ func (s *Shodan) EnterpriseSearch() {
 			}
 		}(i, &wg)
 
-		if i%5 == 0 {
+		if i%2 == 0 {
 			time.Sleep(5 * time.Second)
 		}
 	}
@@ -119,7 +119,7 @@ func (s *Shodan) search(page int) error {
 		return fmt.Errorf("an error occured while adding data to elasticsearch ::: %w", err)
 	}
 
-	log.Success(fmt.Sprintf("shodan search completed successfully. Total record: %d - Page: %d", result.Total, page))
+	log.Success(fmt.Sprintf("shodan search completed successfully - Page: %d", page))
 
 	return nil
 }
@@ -131,7 +131,7 @@ func saveSearchResult(searchResult ShodanSearchResult) error {
 
 	for _, result := range searchResult.Matches {
 		id := fmt.Sprintf("%s:%d", result.Ip, result.Port)
-		err = elasticsearch.AddData("shodan-sonarqube-search", id, result)
+		err = elasticsearch.AddData("shodan-sonarqube-search", id, elasticsearch.ShodanSonarQubeSearch{Ip: result.Ip, Port: result.Port})
 	}
 
 	return err

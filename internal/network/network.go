@@ -11,15 +11,13 @@ import (
 
 // Check target host is accessible or not
 func HostConnection(ip string, port int) (net.Conn, error) {
-	var err error
-
 	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
 	if err != nil {
-		err = fmt.Errorf("network.HostConnection ::: %w", err)
+		return connection, fmt.Errorf("network.HostConnection ::: %w", err)
 	}
 
 	if connection == nil {
-		err = fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
+		return connection, fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
 	}
 
 	return connection, err
