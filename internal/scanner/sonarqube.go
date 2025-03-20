@@ -55,15 +55,9 @@ func (sonarqube Sonarqube) Scan() {
 		return
 	}
 
-	for _, result := range results {
-		connection, err := network.HostConnection(result.Ip, result.Port)
-		if err != nil {
-			log.Error("", err)
-			continue
-		}
-		defer connection.Close()
-		wg.Add(1)
+	wg.Add(len(results))
 
+	for _, result := range results {
 		go func(ip string, port int, subwg *sync.WaitGroup) {
 			getSonarQubeDetail(ip, port, subwg)
 			//checkDefaultCredential(r, &wg)
@@ -96,6 +90,8 @@ func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 	} else if statusCode != 200 {
 		log.Fail(fmt.Sprintf("SonarQube Instance Not Accessible - Status Code: %d - %s:%d", statusCode, sonarQubeDetail.Ip, sonarQubeDetail.Port))
 		return
+	} else {
+		log.Success(fmt.Sprintf("SonarQube Instance Accessible - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port))
 	}
 
 	statusCode, err = sonarQubeDetail.getVersion()
@@ -103,6 +99,8 @@ func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 		log.Error(fmt.Sprintf("An error occured when getting sonarQube version - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port), err)
 	} else if statusCode != 200 {
 		log.Fail(fmt.Sprintf("SonarQube Version Not Found - Status Code: %d - %s:%d", statusCode, sonarQubeDetail.Ip, sonarQubeDetail.Port))
+	} else {
+		log.Success(fmt.Sprintf("SonarQube Version Found - %s", sonarQubeDetail.Version))
 	}
 
 	statusCode, err = sonarQubeDetail.isPublic()
@@ -110,6 +108,8 @@ func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 		log.Error(fmt.Sprintf("An error occured when checking SonarQube projects accessibility - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port), err)
 	} else if statusCode != 200 {
 		log.Fail(fmt.Sprintf("SonarQube Has No Public Projects - Status Code: %d - %s:%d", statusCode, sonarQubeDetail.Ip, sonarQubeDetail.Port))
+	} else {
+		log.Success(fmt.Sprintf("SonarQube Has Public Projects - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port))
 	}
 
 	statusCode, err = sonarQubeDetail.isDefaultCredential()
@@ -117,6 +117,8 @@ func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 		log.Error(fmt.Sprintf("An error occured when checking SonarQube default credentials - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port), err)
 	} else if statusCode != 200 {
 		log.Fail(fmt.Sprintf("Default Credentials Not Work on SonarQube - Status Code: %d - %s:%d", statusCode, sonarQubeDetail.Ip, sonarQubeDetail.Port))
+	} else {
+		log.Success(fmt.Sprintf("Default Credentials Work on SonarQube - %s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port))
 	}
 
 	if sonarQubeDetail.IsPublic {
@@ -126,6 +128,8 @@ func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
 			return
 		} else if statusCode != 200 {
 			log.Fail(fmt.Sprintf("SonarQube Has No Projects - Status Code: %d - %s:%d", statusCode, sonarQubeDetail.Ip, sonarQubeDetail.Port))
+		} else {
+			log.Success(fmt.Sprintf("SonarQube Has Projects - %d", sonarQubeDetail.ProjectCount))
 		}
 
 		if sonarQubeDetail.ProjectCount > 0 {
