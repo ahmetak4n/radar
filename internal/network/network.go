@@ -7,10 +7,23 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"radar/internal/log"
 )
 
+// Check target host is accessible or not
+func HostConnection(ip string, port int) (net.Conn, error) {
+	connection, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10*time.Second)
+	if err != nil {
+		return connection, fmt.Errorf("network.HostConnection ::: %w", err)
+	}
+
+	if connection == nil {
+		return connection, fmt.Errorf("network.HostConnection ::: null.connection ::: %w", err)
+	}
+
+	return connection, err
+}
+
+// Prepare request with user supplied variables
 func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Request, error) {
 	var err error
 	var req *http.Request
@@ -23,48 +36,26 @@ func PrepareRequest(requestMethod RequestMethod, url, payload string) (*http.Req
 	}
 
 	if err != nil {
-		log.Stdout(log.Error, "An error occured when preparing request", err.Error())
+		err = fmt.Errorf("network.PrepareRequest ::: %w", err)
 	}
 
 	return req, err
 }
 
-func HostIsAccessible(port int, ip string) (bool, net.Conn) {
-	result := false
-
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, fmt.Sprint(port)), 10 * time.Second)
-
-	if err != nil {
-		log.Stdout(log.Warning, fmt.Sprintf("%s:%d - Host Not Accessible", ip, port), err.Error())
-	} else if conn == nil {
-		log.Stdout(log.Warning, fmt.Sprintf("%s:%d - Connection is NULL", ip, port), "")
-	} else {
-		result = true
-	}
-
-	return result, conn
-}
-
+// Send reqeust to target
+// Return response body, status code and HTTP response headers
 func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
-
-	client := &http.Client{
-		Transport: httpTransport,
-		Timeout:   30 * time.Second,
-
-		CheckRedirect: func(*http.Request, []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
+	var err error
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Stdout(log.Error, fmt.Sprintf("An error occured when sending request to %s - %s", request.Host, request.URL), err.Error())
+		err = fmt.Errorf("network.SendRequest ::: client.Do ::: %w", err)
 		return nil, 0, nil, err
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Stdout(log.Error, fmt.Sprintf("An error occured when reading response body belong %s - %s", request.Host, request.URL), err.Error())
+		err = fmt.Errorf("network.SendRequest ::: io.ReadAll ::: %w", err)
 		return nil, 0, nil, err
 	}
 
@@ -73,7 +64,7 @@ func SendRequest(request *http.Request) ([]byte, int, http.Header, error) {
 
 	err = response.Body.Close()
 	if err != nil {
-		log.Stdout(log.Error, fmt.Sprintf("An error occured when closing response body %s - %s", request.Host, request.URL), err.Error())
+		err = fmt.Errorf("network.SendRequest ::: response.Body.Close ::: %w", err)
 		return nil, 0, nil, err
 	}
 

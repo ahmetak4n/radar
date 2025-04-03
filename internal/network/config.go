@@ -1,17 +1,14 @@
 package network
 
 import (
-	"net/url"
 	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
 )
 
-var PROXYURL func(*http.Request) (*url.URL, error)
-
 var netDialer *net.Dialer = &net.Dialer{
-	Timeout:   15 * time.Second,
+	Timeout:   10 * time.Second,
 	KeepAlive: 15 * time.Second,
 }
 
@@ -32,6 +29,14 @@ var httpTransport *http.Transport = &http.Transport{
 	MaxConnsPerHost:     10,
 	MaxIdleConnsPerHost: 10,
 
-  Proxy: PROXYURL,
+	Proxy: http.ProxyFromEnvironment,
 }
 
+var client = &http.Client{
+	Transport: httpTransport,
+	Timeout:   30 * time.Second,
+
+	CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+}

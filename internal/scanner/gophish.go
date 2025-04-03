@@ -1,22 +1,7 @@
 package scanner
 
 import (
-	"sync"
-
 	"flag"
-	"fmt"
-
-	"net"
-	"net/http"
-	"net/url"
-
-	"html"
-	"strings"
-
-  "radar/internal/network"
-  "radar/internal/shodan"
-  "radar/internal/log"
-	"radar/internal/model"
 )
 
 var (
@@ -43,50 +28,46 @@ func NewGophishScanner() *GophishScanner {
 	return gophishScanner
 }
 
+/*
 func (gophish GophishScanner) Scan() {
 	var wg sync.WaitGroup
 
 	if gophish.ShodanApiKey == "" {
-		log.Stdout(log.Error, "Shodan Api Key is required for scan", "")
+		log.Error("Shodan Api Key is required for scan", nil)
 		return
 	}
 
-	results := shodan.ShodanSearch("gophish", gophish.ShodanApiKey)
-
-	if len(results.Matches) < 1 {
-		log.Stdout(log.Warning, "Shodan can not found any record!", "")
+	results, err := search.Search("gophish")
+	if err != nil {
+		log.Error("Gophish Scan ::: ", err)
 		return
-	} else {
-		log.Stdout(log.Warning, fmt.Sprintf("%d Record Detected", len(results.Matches)), "")
 	}
 
 	for _, result := range results.Matches {
-		status, conn := network.HostIsAccessible(result.Port, result.Ip_str)
+		conn, err := network.HostConnection(result.Ip, result.Port)
 
-		if status {
-			go func(r model.SearchResult, c net.Conn) {
-				defer c.Close()
-				wg.Add(1)
-				checkGophishkDefaultCredential(r, &wg)
-			}(result, conn)
+		if err != nil {
+			fmt.Errorf("Gophish.Scan ::: An error occured while connecting host ::: %w", err)
 		}
+
+		go func(r shodan.Match, c net.Conn) {
+			defer c.Close()
+			wg.Add(1)
+			checkGophishkDefaultCredential(r, &wg)
+		}(result, conn)
 	}
 
 	wg.Wait()
 }
 
-func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.WaitGroup) {
+func checkGophishkDefaultCredential(match shodan.Match, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	protocol := "http://"
 
-	if searchResult.Ssl.Jarm != "" {
-		protocol = "https://"
-	}
+	gorillaCsrfCookie, gophishCsrfCookie, csrfToken := getGophishCsrfToken(match, protocol)
 
-	gorillaCsrfCookie, gophishCsrfCookie, csrfToken := getGophishCsrfToken(searchResult, protocol)
-
-	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), fmt.Sprintf("username=%s&password=%s&csrf_token=%s", GOPHISH_DEFAULT_USER, GOPHISH_DEFAULT_PASSWORD, csrfToken))
+	req, err := network.PrepareRequest(network.PostRequest, fmt.Sprintf("%s%s:%d%s", protocol, match.Ip, match.Port, GOPHISH_LOGIN_PATH), fmt.Sprintf("username=%s&password=%s&csrf_token=%s", GOPHISH_DEFAULT_USER, GOPHISH_DEFAULT_PASSWORD, csrfToken))
 	if err != nil {
 		return
 	}
@@ -102,14 +83,14 @@ func checkGophishkDefaultCredential(searchResult model.SearchResult, wg *sync.Wa
 	}
 
 	if statusCode == 302 {
-		log.Stdout(log.Success, fmt.Sprintf("Default Credential Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Success(fmt.Sprintf("Default Credential Work - %s:%d", match.Ip, match.Port))
 	} else {
-		log.Stdout(log.Fail, fmt.Sprintf("Default Credential Not Work - %s:%d", searchResult.Ip_str, searchResult.Port), "")
+		log.Fail(fmt.Sprintf("Default Credential Not Work - %s:%d", match.Ip, match.Port))
 	}
 }
 
-func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (string, string, string) {
-	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d/", protocol, searchResult.Ip_str, searchResult.Port), "")
+func getGophishCsrfToken(match shodan.Match, protocol string) (string, string, string) {
+	req, err := network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d/", protocol, match.Ip, match.Port), "")
 	if err != nil {
 		return "", "", ""
 	}
@@ -121,7 +102,7 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 
 	gorillaCsrfCookie := url.QueryEscape(strings.TrimPrefix(strings.Split(headers.Get("Set-Cookie"), ";")[0], "_gorilla_csrf="))
 
-	req, err = network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d%s", protocol, searchResult.Ip_str, searchResult.Port, GOPHISH_LOGIN_PATH), "")
+	req, err = network.PrepareRequest(network.GetRequest, fmt.Sprintf("%s%s:%d%s", protocol, match.Ip, match.Port, GOPHISH_LOGIN_PATH), "")
 	if err != nil {
 		return "", "", ""
 	}
@@ -141,3 +122,4 @@ func getGophishCsrfToken(searchResult model.SearchResult, protocol string) (stri
 
 	return gorillaCsrfCookie, gophishCsrfCookie, csrfToken
 }
+*/
