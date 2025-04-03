@@ -3,6 +3,7 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"sync"
 
@@ -57,27 +58,31 @@ func (sonarqube Sonarqube) Scan() {
 
 	wg.Add(len(results))
 
-	for _, result := range results {
+	for i, result := range results {
 		go func(ip string, port int, subwg *sync.WaitGroup) {
-			getSonarQubeDetail(ip, port, subwg)
-			//checkDefaultCredential(r, &wg)
+			sd := SonarQubeDetail{
+				Ip:           ip,
+				Port:         port,
+				IsAccessible: false,
+				IsPublic:     false,
+			}
+
+			sd.getSonarQubeDetail(subwg)
 		}(result.Ip, result.Port, &wg)
+
+		// Sleep for 5 seconds after every 500 requests
+		// Otherwise, elasticsearch drops the connections
+		if i%500 == 0 {
+			time.Sleep(time.Second * 5)
+		}
 	}
 
 	wg.Wait()
-
 }
 
 // Get details on detected SonarQube
 // Like issue, vulnerability, code smell counts, etc.
-func getSonarQubeDetail(ip string, port int, wg *sync.WaitGroup) {
-	sonarQubeDetail := &SonarQubeDetail{
-		Ip:           ip,
-		Port:         port,
-		IsAccessible: false,
-		IsPublic:     false,
-	}
-
+func (sonarQubeDetail *SonarQubeDetail) getSonarQubeDetail(wg *sync.WaitGroup) {
 	defer func() {
 		sonarQubeDetail.saveToElasticsearch()
 		wg.Done()
@@ -224,13 +229,13 @@ func (sonarQubeDetail *SonarQubeDetail) getProjectCount() (int, error) {
 		return 0, fmt.Errorf("sonarqube.getProjectCount ::: %w ", err)
 	}
 
-	if statusCode == 200 {
-		sonarQubeDetail.ProjectCount = result.Paging.Total
-	}
-
 	err = json.Unmarshal([]byte(body), &result)
 	if err != nil {
 		return 0, fmt.Errorf("sonarqube.getProjectCount ::: %w", err)
+	}
+
+	if statusCode == 200 {
+		sonarQubeDetail.ProjectCount = result.Paging.Total
 	}
 
 	return statusCode, err
@@ -303,7 +308,7 @@ func (sonarQubeDetail *SonarQubeDetail) saveToElasticsearch() {
 	id := fmt.Sprintf("%s:%d", sonarQubeDetail.Ip, sonarQubeDetail.Port)
 	err := elasticsearch.AddData("sonarqube-db", id, sonarQubeDetail)
 	if err != nil {
-		log.Error("An error occured when adding data to elasticsearch :::", err)
+		log.Error(fmt.Sprintf("An error occured when adding data to elasticsearch - %s:%d - %s", sonarQubeDetail.Ip, sonarQubeDetail.Port, err.Error()), err)
 	}
 }
 
