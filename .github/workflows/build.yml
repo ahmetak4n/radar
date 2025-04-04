@@ -40,14 +40,14 @@ jobs:
     - name: SetUpGo
       uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
       with:
-        go-version: 1.22
+        go-version: 1.23
 
     - name: InstallDependencies
       run: |
-        go get -u ./cmd/radar/
+        go get -u .
 
     - name: Build
-      run: go build -v ./cmd/radar/main.go
+      run: go build -v main.go
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@f3feb00acb00f31a6f60280e6ace9ca31d91c76a
